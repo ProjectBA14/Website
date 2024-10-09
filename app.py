@@ -15,9 +15,10 @@ import google.auth.transport.requests
 
 # Generate a secret key for Flask (use a secure key in production)
 app_secret_key = secrets.token_hex(16)
+service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 # Firebase Admin SDK setup
-cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-79d5db2a4d.json')
+cred = credentials.Certificate(service_account_path)
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'ayushstartup-7277a.appspot.com',
 })
@@ -31,6 +32,7 @@ def set_admin(uid):
 
 def set_it_executive(uid):
     auth.set_custom_user_claims(uid, {'it_executive': True})
+service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 # Flask app setup
 template = "./template"
@@ -38,7 +40,6 @@ app = Flask(__name__, template_folder=template)
 app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 flow = Flow.from_client_config(
     {
