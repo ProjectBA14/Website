@@ -39,8 +39,7 @@ app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-port = int(os.environ.get('PORT', 5000))
-app.run(host='0.0.0.0', port=port)
+
 flow = Flow.from_client_config(
     {
         "web": {
@@ -809,4 +808,4 @@ def logout():
     return redirect(url_for('homepage'))
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True,host='0.0.0.0',port=int(os.environ.get('PORT',8080)))
