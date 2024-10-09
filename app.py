@@ -38,22 +38,23 @@ app = Flask(__name__, template_folder=template)
 app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 flow = Flow.from_client_config(
     {
         "web": {
             "client_id": GOOGLE_CLIENT_ID,
-            "project_id": "windy-elevator-437515-p4",
+            "project_id": "your-project-id",
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uris": ["http://localhost:8001/callback"],
+            "redirect_uris": [
+                "https://ticketing-57ep.onrender.com/callback"
+            ],
         }
     },
     scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-    redirect_uri='http://localhost:8001/callback'
+    redirect_uri='https://ticketing-57ep.onrender.com/callback'
 )
 
 # Configurations for file uploads
