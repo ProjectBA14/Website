@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticketing System Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='user-dash-style.css') }}"> 
+    <style>
+/* Global Styles */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  color: #333; /* Black */
+  background-color: #fff; /* White */
+}
+
+body {
+  font-size: 16px;
+  line-height: 1.5;
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 250px;
+  background-color: #2c3e50;
+  padding: 20px;
+  color: white;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: -250px;  /* Hidden by default */
+  transition: left 0.3s ease;  /* Smooth transition */
+  z-index: 1000;
+}
+
+/* Sidebar Heading */
+.sidebar-heading {
+  margin-top: 0;
+  color: white;
+  font-size: 24px;
+  text-align: center;
+}
+
+/* Profile Section inside Sidebar */
+.profile-section {
+  margin-top: 20px;
+}
+
+.profile-section p {
+  margin: 5px 0;
+}
+
+/* Main content area */
+.user-dashboard {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+/* Centered Title for Dashboard */
+.centered-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-top: 20px;
+}
+
+/* Form Container Unchanged */
+.container {
+  padding: 20px;
+}
+
+.centered-form {
+  width: 100%;
+  background-color: #fff;
+  padding: 30px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+/* Form Group Styling */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+/* Button Styling */
+.btn-create-ticket {
+  background-color: #000;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+.btn-create-ticket:hover {
+  background-color: #333;
+}
+
+/* Navbar Styling */
+.navbar {
+  background-color: #000;
+  padding: 10px 20px;
+  text-align: center;
+}
+
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-links li {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 5px 10px;
+}
+
+.nav-links a:hover {
+  text-decoration: underline;
+}
+    </style>
+</head>
+<body>
+
+<!-- Sidebar (Profile Section) -->
+<div class="sidebar" id="sidebar">
+    <h2 class="sidebar-heading">Profile</h2>
+    <div class="profile-section">
+        <p><strong>Name:</strong> <span id="profile-name">John Doe</span></p>
+        <p><strong>Role:</strong> <span id="profile-role">User</span></p>
+        <p><strong>Email:</strong> <span id="profile-email">john.doe@example.com</span></p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="user-dashboard">
+    <header class="header">
+        <h1 class="centered-title">USER Dashboard</h1>
+
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <ul class="nav-links">
+                <li><a href="{{ url_for('homepage') }}">Home</a></li>
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('ticket_history') }}">Ticket History</a></li>
+                <li><a href="#profile">Profile</a></li>
+                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Container for the entire page -->
+    <div class="container">
+        <!-- Ticketing System -->
+        <div class="ticketing-system">
+            <h2>Create a Ticket</h2>
+            
+            <form id="create-ticket-form" method="POST" action="{{ url_for('dashboard') }}">
+                <div class="form-group">
+                  <label for="title">Title:</label>
+                  <input type="text" id="title" name="title" placeholder="Enter ticket title">
+                </div>
+               
+                <div class="form-group">
+                    <label for="product">Product:</label>
+                    <select id="product" name="product">
+                      <option value="">Select a product</option>
+                      <option value="projector">Projector</option>
+                      <option value="printer">Printer</option>
+                      <option value="scanner">Scanner</option>
+                      <option value="network-connectivity">Network / Connectivity</option>
+                      <option value="laptop">Laptop</option>
+                      <option value="desktop">Desktop</option>
+                      <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="issue">Issue:</label>
+                    <select id="issue" name="issue">
+                      <option value="">Select an issue</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="building">Building:</label>
+                    <select id="building" name="building">
+                      <option value="">Select a building</option>
+                      <option value="a-block">A Block</option>
+                      <option value="b-block">B Block</option>
+                      <option value="c-block">C Block (SUNSTONE)</option>
+                      <option value="d-block">D Block (UID)</option>
+                      <option value="other-building">Other Building</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="room">Room:</label>
+                    <input type="text" id="room" name="room" placeholder="Enter room number">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" placeholder="Enter ticket description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority" name="priority">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-create-ticket">Create Ticket</button>
+            </form>
+
+            
+        </div>
+    </div>
+</div>
+
+<!-- Add the JavaScript directly here or link it externally -->
+<script>
+const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+
+    // Show the sidebar when hovering on the left edge of the screen
+    document.body.addEventListener('mousemove', function(event) {
+        if (event.clientX < 30) {  // Near the left edge
+            sidebar.style.left = '0';
+            mainContent.style.marginLeft = '250px'; // Adjust content margin
+        } else if (event.clientX > 280) {  // When mouse leaves sidebar
+            sidebar.style.left = '-250px';
+            mainContent.style.marginLeft = '0'; // Reset content margin
+        }
+    });
+
+    const productSelect = document.getElementById('product');
+    const issueSelect = document.getElementById('issue');
+
+    productSelect.addEventListener('change', (e) => {
+      const selectedProduct = e.target.value;
+      const issueOptions = {
+        'network-connectivity': [
+          'Internet is very slow',
+          'Weak Signal / Bad Signal',
+          'Router Configuration and Troubleshooting',
+          'VPN access and Setup Issues',
+          'Network Security Vulnerabilities (Firewall and Malware Protection)',
+          'Network Cable Connection issue',
+          'Other Network / Connectivity Issues'
+        ],
+        'pc': [
+          'Not turning on',
+          'Glitching',
+          'Slow performance',
+          'Other issue'
+        ],
+        'projector': [
+          'Not turning on',
+          'Glitching',
+          'Slow performance',
+          'Other issue'
+        ],
+        'printer': [
+          'Not printing',
+          'Paper jam',
+          'Ink or toner issue',
+          'Other issue'
+        ],
+        'scanner': [
+          'Not scanning',
+          'Scan quality issue',
+          'Other issue'
+        ],
+        'laptop': [
+          'Laptop is not starting',
+          'Laptop is overheating',
+          'Laptop is shutting down automatically',
+          'Laptop is very slow / lagging',
+          'OS not booting (Blue Screen of Death or Black Screen)',
+          'Missing or Corrupt Drivers',
+          'Display Issue',
+          'Issue in installing / uninstalling a program',
+          'Storage / Data Issue',
+          'Peripheral Device Issue (mouse etc.)',
+          'Security and Privacy Issue',
+          'Battery Issue',
+          'User Account Issue',
+          'Backup & Recovery Issue',
+          'Other Laptop Issues'
+        ],
+        'desktop': [
+          'Desktop is not starting',
+          'Desktop is very slow',
+          'Hardware Issues',
+          'Desktop is overheating',
+          'Desktop is shutting down automatically',
+          'OS not booting (Blue Screen of Death or Black Screen)',
+          'Missing or Corrupt Drivers',
+          'Display Issue',
+          'Issue in installing / uninstalling a program',
+          'Storage / Data Issue',
+          'Peripheral Device Issue (mouse etc.)',
+          'Security and Privacy Issue',
+          'User Account Issue',
+          'Backup & Recovery Issue',
+          'Other Desktop Issues'
+        ],
+        'other': [
+          'Other issue'
+        ]
+      };
+
+      issueSelect.innerHTML = '<option value="">Select an issue</option>'; // Reset issues
+
+      if (issueOptions[selectedProduct]) {
+        issueOptions[selectedProduct].forEach((issue) => {
+          issueSelect.innerHTML += `<option value="${issue.toLowerCase().replace(' ', '-')}">${issue}</option>`;
+        });
+      }
+    });
+</script>
+
+</body>
+</html>
