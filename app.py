@@ -5,8 +5,8 @@ from werkzeug.utils import secure_filename
 import os
 import secrets
 import requests
-from firebase_admin.exceptions import FirebaseError  # Use FirebaseError for exceptions
-from datetime import datetime,timedelta,timezone
+from firebase_admin.exceptions import FirebaseError
+from datetime import datetime, timedelta, timezone
 
 # OAuth libraries
 from google.oauth2 import id_token
@@ -17,9 +17,9 @@ import google.auth.transport.requests
 app_secret_key = secrets.token_hex(16)
 
 # Firebase Admin SDK setup
-cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-79d5db2a4d.json')  # Use your service account key file
+cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-79d5db2a4d.json')
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'ayushstartup-7277a.appspot.com',  # Use your Firebase storage bucket
+    'storageBucket': 'ayushstartup-7277a.appspot.com',
 })
 
 # Initialize Firestore DB
@@ -38,6 +38,7 @@ app = Flask(__name__, template_folder=template)
 app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 flow = Flow.from_client_config(
     {
@@ -70,7 +71,6 @@ def allowed_file(filename):
 def homepage():
     return redirect('login')
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
@@ -78,28 +78,24 @@ def login_page():
         password = request.form['password']
 
         try:
-            # Authenticate the user in Firebase
             user = auth.get_user_by_email(email)
             session['user_token'] = user.uid
             session['user_email'] = email
-
-            # Reset session roles to ensure correct roles are assigned
             session['is_admin'] = False
             session['is_it_executive'] = False
 
-            # Fetch claims from Firebase to determine role
             claims = user.custom_claims
             if claims:
                 if claims.get('admin'):
                     session['is_admin'] = True
-                    session['user_role'] = 'admin'  # Add this to store in session
+                    session['user_role'] = 'admin'
                     return redirect(url_for('admin_dashboard'))
                 elif claims.get('it_executive'):
                     session['is_it_executive'] = True
-                    session['user_role'] = 'it_executive'  # Add this to store in session
+                    session['user_role'] = 'it_executive'
                     return redirect(url_for('it_executive_dashboard'))
                 else:
-                    session['user_role'] = 'user'  # Normal user
+                    session['user_role'] = 'user'
                     return redirect(url_for('dashboard'))
             else:
                 session['user_role'] = 'user'
@@ -111,7 +107,6 @@ def login_page():
 
     return render_template('login.html')
 
-# Google login route
 @app.route('/google_login')
 def google_login():
     authorization_url, state = flow.authorization_url()
@@ -120,57 +115,51 @@ def google_login():
 
 @app.route('/callback')
 def callback():
-    flow.fetch_token(authorization_response=request.url)
-
-    if not session['state'] == request.args['state']:
-        flash("Invalid state parameter.")
+    if 'state' not in session or 'state' not in request.args or session['state'] != request.args['state']:
+        flash("Invalid state parameter.", "error")
         return redirect(url_for('login_page'))
 
-    credentials = flow.credentials
-    request_session = google.auth.transport.requests.Request()
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials.id_token, request=request_session, audience=GOOGLE_CLIENT_ID
-    )
+    try:
+        flow.fetch_token(authorization_response=request.url)
+        credentials = flow.credentials
+        request_session = google.auth.transport.requests.Request()
+        id_info = id_token.verify_oauth2_token(
+            id_token=credentials.id_token, request=request_session, audience=GOOGLE_CLIENT_ID
+        )
 
-    # Restrict users to only those with a gdgu.org domain
-    email = id_info.get('email')
-    name = id_info.get('name')
-    if email.endswith('@gdgu.org'):
-        # Add user to the session
-        session['user_email'] = email
-        session['user_token'] = id_info['sub']
+        email = id_info.get('email')
+        name = id_info.get('name')
+        if email.endswith('@gdgu.org'):
+            session['user_email'] = email
+            session['user_token'] = id_info['sub']
 
-        try:
-            # Try to get the user from Firebase
-            user = auth.get_user_by_email(email)
-        except firebase_admin.auth.UserNotFoundError:
-            # If the user doesn't exist, create them in Firebase Authentication
             try:
+                user = auth.get_user_by_email(email)
+            except firebase_admin.auth.UserNotFoundError:
                 user = auth.create_user(
                     email=email,
                     display_name=name,
-                    email_verified=True  # Since it's through Google OAuth, we know the email is verified
+                    email_verified=True
                 )
                 flash(f"Account for {email} created successfully!", 'success')
-            except Exception as e:
-                flash(f"Error creating account for {email}: {str(e)}", 'error')
-                return redirect(url_for('login_page'))
 
-        # After user creation or fetching, check if the user is an admin or IT executive
-        claims = user.custom_claims
-        if claims and claims.get('admin'):
-            session['is_admin'] = True
-            return redirect(url_for('admin_dashboard'))
-        elif claims and claims.get('it_executive'):
-            session['is_it_executive'] = True
-            return redirect(url_for('it_executive_dashboard'))
+            claims = user.custom_claims
+            if claims and claims.get('admin'):
+                session['is_admin'] = True
+                return redirect(url_for('admin_dashboard'))
+            elif claims and claims.get('it_executive'):
+                session['is_it_executive'] = True
+                return redirect(url_for('it_executive_dashboard'))
+            else:
+                session['is_admin'] = False
+                return redirect(url_for('dashboard'))
         else:
-            session['is_admin'] = False
-            return redirect(url_for('dashboard'))
-    else:
-        flash("You must use an email from the gdgu.org domain.")
-        return redirect(url_for('login_page'))
+            flash("You must use an email from the gdgu.org domain.")
+            return redirect(url_for('login_page'))
 
+    except Exception as e:
+        flash(f"OAuth error: {str(e)}", "error")
+        return redirect(url_for('login_page'))
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -178,23 +167,11 @@ def signup():
         email = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirmPassword']
-        recaptcha_response = request.form.get('g-recaptcha-response')
 
         if password != confirm_password:
             return jsonify({'error': 'Passwords do not match'}), 400
 
-        # Verify reCAPTCHA
-        secret_key = 'your-recaptcha-secret-key'
-        payload = {
-            'secret': secret_key,
-            'response': recaptcha_response,
-            'remoteip': request.remote_addr
-        }
-        response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=payload)
-        result = response.json()
-
         try:
-            # Create a new user in Firebase Authentication
             user = auth.create_user(email=email, password=password)
             flash("Account created successfully!")
             return jsonify({'success': True, 'redirect': url_for('login_page')}), 200
@@ -204,7 +181,6 @@ def signup():
             return jsonify({'error': 'An unexpected error occurred.'}), 400
 
     return render_template('signup.html')
-
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
