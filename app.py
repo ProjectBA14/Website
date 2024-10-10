@@ -18,7 +18,7 @@ app_secret_key = secrets.token_hex(16)
 service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 # Firebase Admin SDK setup
-cred = credentials.Certificate(service_account_path)
+cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-fce84961ed.json')  # Use your service account key file
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'ayushstartup-7277a.appspot.com',
 })
