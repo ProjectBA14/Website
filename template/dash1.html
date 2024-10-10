@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticketing System Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'DM Sans', sans-serif;
+            color: #333;
+        }
+
+        body {
+            font-size: 16px;
+            line-height: 1.5;
+            display: flex;
+            height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            padding: 20px;
+            color: #ffffff;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: -250px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-heading {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .profile-section {
+            margin-top: 20px;
+        }
+
+        .profile-section p {
+            margin: 5px 0;
+            color: #ffffff;
+        }
+
+        .user-dashboard {
+            flex-grow: 1;
+            padding: 20px;
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        .tab {
+            overflow: hidden;
+            background-color: #f1f1f1;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tab button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 20px;
+            font-size: 17px;
+            transition: background-color 0.3s;
+        }
+
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        .tabcontent {
+            display: none;
+        }
+
+        .tabcontent.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar (Profile Section) -->
+    <div class="sidebar" id="sidebar">
+        <h2 class="sidebar-heading">Profile</h2>
+        <div class="profile-section">
+            <p><strong>Name:</strong> <span id="profile-name">{{ profile.name }}</span></p>
+            <p><strong>Phone:</strong> <span id="profile-phone">{{ profile.phone }}</span></p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="user-dashboard" id="main-content">
+        <header class="header">
+            <div class="navigation-bar">
+                {% if user_role == 'admin' %}
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                    <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+                    <a href="{{ url_for('ticket_history') }}">Admin History</a>
+                {% elif user_role == 'it_executive' %}
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('it_executive_dashboard') }}">IT Executive Dashboard</a>
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+                {% else %}
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('profile') }}">Profile</a>
+                    <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
+        </header>
+
+        <!-- Tabs for Ticket Types -->
+        <div class="tab"><br><br>
+            <button class="tablinks active" onclick="openTab(event, 'normalTicket')">Create Normal Ticket</button>
+            {% if user_role in ['admin', 'manager'] %}
+            <button class="tablinks" onclick="openTab(event, 'schedulingTicket')">Create Scheduling Ticket</button>
+            {% endif %}
+        </div>
+
+        <!-- Normal Ticket Form -->
+        <div id="normalTicket" class="tabcontent active">
+            <h2>Create a Ticket</h2>
+            <form id="create-ticket-form" method="POST" action="{{ url_for('dashboard') }}">
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" placeholder="Enter ticket title">
+                </div>
+                <div class="form-group">
+                    <label for="product">Product:</label>
+                    <select id="product" name="product">
+                        <option value="">Select a product</option>
+                        <option value="projector">Projector</option>
+                        <option value="printer">Printer</option>
+                        <option value="scanner">Scanner</option>
+                        <option value="network-connectivity">Network / Connectivity</option>
+                        <option value="laptop">Laptop</option>
+                        <option value="desktop">Desktop</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issue">Issue:</label>
+                    <select id="issue" name="issue">
+                        <option value="">Select an issue</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="building">Building:</label>
+                    <select id="building" name="building">
+                        <option value="">Select a building</option>
+                        <option value="a-block">A Block</option>
+                        <option value="b-block">B Block</option>
+                        <option value="c-block">C Block (SUNSTONE)</option>
+                        <option value="d-block">D Block (UID)</option>
+                        <option value="other-building">Other Building</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="room">Room:</label>
+                    <input type="text" id="room" name="room" placeholder="Enter room number">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" placeholder="Enter ticket description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-create-ticket" name="create_ticket">Create Ticket</button>
+            </form>
+        </div>
+
+        <!-- Scheduling Ticket Form (Admin/Manager only) -->
+        {% if user_role in ['admin', 'manager'] %}
+        <div id="schedulingTicket" class="tabcontent">
+            <h2>Create Scheduling Ticket</h2>
+            <form id="create-scheduling-form" method="POST" action="{{ url_for('create_scheduling_ticket') }}">
+                <label for="event_name">Event Name:</label>
+                <input type="text" id="event_name" name="event_name" placeholder="Enter event name" required>
+                <label for="rooms">Rooms:</label>
+                <input type="text" id="rooms" name="rooms" placeholder="Enter room numbers (e.g., 101, 102)" required>
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+                <label for="start_time">Start Time:</label>
+                <input type="time" id="start_time" name="start_time" required>
+                <label for="end_time">End Time:</label>
+                <input type="time" id="end_time" name="end_time" required>
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" placeholder="Enter location" required>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" placeholder="Describe the event" required></textarea>
+                <label for="additional_requirements">Additional Requirements:</label>
+                <textarea id="additional_requirements" name="additional_requirements" placeholder="Any additional requirements"></textarea>
+                <button type="submit" name="create_scheduling_ticket">Create Scheduling Ticket</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <!-- JavaScript for Tabs -->
+     <!-- Scheduling Ticket Form (Admin/Manager only) -->
+{% if user_role in ['admin', 'manager'] %}
+<div id="schedulingTicket" class="tabcontent">
+    <h2>Create Scheduling Ticket</h2>
+    <form id="create-scheduling-form" method="POST" action="{{ url_for('create_scheduling_ticket') }}">
+        <label for="event_name">Event Name:</label>
+        <input type="text" id="event_name" name="event_name" placeholder="Enter event name" required>
+        <label for="rooms">Rooms:</label>
+        <input type="text" id="rooms" name="rooms" placeholder="Enter room numbers (e.g., 101, 102)" required>
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required>
+        <label for="start_time">Start Time:</label>
+        <input type="time" id="start_time" name="start_time" required>
+        <label for="end_time">End Time:</label>
+        <input type="time" id="end_time" name="end_time" required>
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location" placeholder="Enter location" required>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" placeholder="Describe the event" required></textarea>
+        <label for="additional_requirements">Additional Requirements:</label>
+        <textarea id="additional_requirements" name="additional_requirements" placeholder="Any additional requirements"></textarea>
+        <button type="submit">Create Scheduling Ticket</button>
+    </form>
+</div>
+{% endif %}
+
+
+    <script src="{{ url_for('static', filename='js/dash1.js') }}"> </script>
+</body>
+</html>

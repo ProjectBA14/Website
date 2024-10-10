@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Tasks - Manage Tickets</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            margin: auto;
+            padding-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .assign-container {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            gap: 5px;
+        }
+
+        .assign-button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-history-btn {
+            background-color: #007bff;
+            color: #fff;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-history-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .toggleable-section {
+            display: none;
+        }
+
+        .toggleable-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation-bar">
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+        <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+        <a href="{{ url_for('ticket_history') }}">Admin History</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="container">
+        <h1>Admin Tasks - Manage Tickets and Scheduled Events</h1>
+
+        <!-- Toggle Buttons -->
+        <div class="toggle-buttons">
+            <button class="toggle-btn" data-section="tickets-section">Manage Tickets</button>
+            <button class="toggle-btn" data-section="scheduled-section">Manage Scheduled Events</button>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-container">
+            <input type="text" id="searchInput" placeholder="Search Title or Description...">
+            <select id="productFilter">
+                <option value="">Filter by Product</option>
+                <option value="projector">Projector</option>
+                <option value="printer">Printer</option>
+                <option value="scanner">Scanner</option>
+                <option value="network-connectivity">Network / Connectivity</option>
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop</option>
+            </select>
+            <select id="priorityFilter">
+                <option value="">Filter by Priority</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+
+        <!-- Tickets Section -->
+        <div id="tickets-section" class="toggleable-section active">
+            <h2>Manage Tickets</h2>
+            <table id="tickets-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Assigned to</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Product</th>
+                        <th id="sortDateHeader">Created At <span id="sortIndicator">↑↓</span></th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr class="ticket-row" data-ticket-id="{{ ticket.id }}" data-status="{{ ticket.status }}">
+                        <td>{{ ticket.title }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>{{ ticket.assigned_to }}</td>
+                        <td>{{ ticket.status }}</td>
+                        <td>{{ ticket.priority }}</td>
+                        <td>{{ ticket.product }}</td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <div class="assign-container">
+                                <form method="POST" action="{{ url_for('admin_tasks') }}">
+                                    <select name="it_executive" required>
+                                        <option value="">Select IT Executive</option>
+                                        {% for exec in it_executives %}
+                                        <option value="{{ exec.email }}">{{ exec.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                                    <button type="submit" class="assign-button">Assign</button>
+                                </form>
+                                
+                                <button class="view-history-btn" data-ticket-id="{{ ticket.id }}">View History</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Hidden Row for Ticket History -->
+                    <tr class="ticket-history-row" id="history-{{ ticket.id }}" style="display: none;">
+                        <td colspan="8">
+                            <div class="history-content">
+                                <h4>Ticket History:</h4>
+                                <ul>
+                                    {% for entry in ticket.history %}
+                                    <li>{{ entry.timestamp }} - {{ entry.status }}: {{ entry.note }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Scheduled Events Section -->
+        <div id="scheduled-section" class="toggleable-section">
+            <h2>Manage Scheduled Events</h2>
+            <table id="scheduled-table">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Rooms</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Location</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in scheduled_events %}
+                    <tr>
+                        <td>{{ event.event_name }}</td>
+                        <td>{{ event.rooms }}</td>
+                        <td>{{ event.date }}</td>
+                        <td>{{ event.start_time }}</td>
+                        <td>{{ event.end_time }}</td>
+                        <td>{{ event.location }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_tasks') }}">
+                                <select name="it_executive[]" multiple required>
+                                    <option value="">Select IT Executive(s)</option>
+                                    {% for exec in it_executives %}
+                                    <option value="{{ exec.email }}">{{ exec.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="event_id" value="{{ event.id }}"><br>
+                                <button type="submit" class="assign-button">Assign to Event</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Toggle section visibility
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        const sections = document.querySelectorAll('.toggleable-section');
+
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const sectionId = button.getAttribute('data-section');
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === sectionId) {
+                        section.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // View history button functionality
+        document.querySelectorAll('.view-history-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const ticketId = button.getAttribute('data-ticket-id');
+                const historyRow = document.getElementById(`history-${ticketId}`);
+                historyRow.style.display = historyRow.style.display === 'none' ? 'table-row' : 'none';
+            });
+        });
+
+        // Add sorting and filtering functionality here if needed
+    </script>
+</body>
+</html>

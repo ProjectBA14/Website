@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Executive Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='it-dash-style.css') }}">
+    <style>
+        /* Styles for the page */
+        .it-executive-dashboard {
+            width: 80%;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .filter-container select, .filter-container input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .navigation-bar {
+            background-color: #333;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .navigation-bar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        .navigation-bar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .logout-btn {
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation-bar">
+        {% if user_role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+            <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+            <a href="{{ url_for('ticket_history') }}">Admin History</a>
+        {% elif user_role == 'it_executive' %}
+            <a href="{{ url_for('it_executive_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('homepage') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="it-executive-dashboard">
+        <h1>IT Executive Dashboard</h1>
+
+        <!-- Toggle Buttons for Open, Assigned, and Scheduled Tickets -->
+        <div class="filter-container">
+            <button class="toggle-btn" data-section="open-tickets-section">Open Tickets</button>
+            <button class="toggle-btn" data-section="assigned-tickets-section">Assigned Tickets</button>
+            <button class="toggle-btn" data-section="scheduled-tickets-section">Scheduled Tickets</button>
+        </div>
+
+        <!-- Open Tickets Section -->
+        <div id="open-tickets-section">
+            <h2>Open Tickets</h2>
+            <div class="filter-container">
+                <input type="text" id="openSearchInput" placeholder="Search Open Tickets...">
+                <select id="openProductFilter">
+                    <option value="">Filter by Product</option>
+                    <option value="projector">Projector</option>
+                    <option value="printer">Printer</option>
+                    <option value="scanner">Scanner</option>
+                    <option value="network-connectivity">Network / Connectivity</option>
+                    <option value="laptop">Laptop</option>
+                    <option value="desktop">Desktop</option>
+                </select>
+                <select id="openPriorityFilter">
+                    <option value="">Filter by Priority</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <table id="open-tickets-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Priority</th>
+                        <th>Product</th>
+                        <th>Building</th>
+                        <th>Room</th>
+                        <th>Created At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in unassigned_tickets %}
+                    <tr class="open-ticket-row">
+                        <td>{{ ticket.title }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>{{ ticket.priority }}</td>
+                        <td>{{ ticket.product }}</td>
+                        <td>{{ ticket.building }}</td>
+                        <td>{{ ticket.room }}</td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('it_executive_dashboard') }}">
+                                <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                                <button type="submit" class="btn-accept">Accept</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Assigned Tickets Section -->
+        <div id="assigned-tickets-section" style="display:none;">
+            <h2>Your Assigned Tickets</h2>
+            <div class="filter-container">
+                <input type="text" id="assignedSearchInput" placeholder="Search Assigned Tickets...">
+                <select id="assignedProductFilter">
+                    <option value="">Filter by Product</option>
+                    <option value="projector">Projector</option>
+                    <option value="printer">Printer</option>
+                    <option value="scanner">Scanner</option>
+                    <option value="network-connectivity">Network / Connectivity</option>
+                    <option value="laptop">Laptop</option>
+                    <option value="desktop">Desktop</option>
+                </select>
+                <select id="assignedPriorityFilter">
+                    <option value="">Filter by Priority</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <table id="assigned-tickets-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Assigned to</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Product</th>
+                        <th>Issue</th>
+                        <th>Building</th>
+                        <th>Room</th>
+                        <th>Created At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in assigned_tickets %}
+                    <tr class="assigned-ticket-row">
+                        <td>{{ ticket.title }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>{{ ticket.assigned_to_display }}</td>
+                        <td>{{ ticket.status }}</td>
+                        <td>{{ ticket.priority }}</td>
+                        <td>{{ ticket.product }}</td>
+                        <td>{{ ticket.issue }}</td>
+                        <td>{{ ticket.building }}</td>
+                        <td>{{ ticket.room }}</td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('it_executive_dashboard') }}">
+                                <input type="hidden" name="ticket-id" value="{{ ticket.id }}">
+                                <select name="ticket-status">
+                                    <option value="in-progress" {% if ticket.status == 'In Progress' %} selected {% endif %}>In Progress</option>
+                                    <option value="resolved" {% if ticket.status == 'Resolved' %} selected {% endif %}>Resolved</option>
+                                </select>
+                                <input type="text" name="progress-note" placeholder="Progress note (optional)">
+                                <button type="submit" name="update-status">Update Status</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Scheduled Tickets Section -->
+        <div id="scheduled-tickets-section" style="display:none;">
+            <h2>Scheduled Tickets</h2>
+            <div class="filter-container">
+                <input type="text" id="scheduledSearchInput" placeholder="Search Scheduled Tickets...">
+                <select id="scheduledPriorityFilter">
+                    <option value="">Filter by Priority</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <table id="scheduled-tickets-table">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Description</th>
+                        <th>Location</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Created By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in scheduled_events %}
+                    <tr class="scheduled-ticket-row">
+                        <td>{{ event.event_name }}</td>
+                        <td>{{ event.description }}</td>
+                        <td>{{ event.location }}</td>
+                        <td>{{ event.date }}</td>
+                        <td>{{ event.start_time }}</td>
+                        <td>{{ event.end_time }}</td>
+                        <td>{{ event.created_by }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Toggle visibility between sections
+    // Toggle visibility between sections while keeping buttons visible
+        document.querySelectorAll('.toggle-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    let sectionToShow = this.getAttribute('data-section');
+
+                    // Show the selected section, hide the others
+                    document.querySelectorAll('.it-executive-dashboard > div').forEach(div => {
+                        if (div.id === sectionToShow) {
+                            div.style.display = 'block';
+                        } else if (div.classList.contains('filter-container')) {
+                            div.style.display = ''; // Keep filter-container always visible
+                        } else {
+                            div.style.display = 'none';
+                        }
+                    });
+                });
+        });
+
+        // Filtering functionality for each ticket section
+        function filterTickets(tableId, searchInputId, productFilterId, priorityFilterId) {
+            let searchValue = document.getElementById(searchInputId).value.toLowerCase().trim();
+            let productFilter = document.getElementById(productFilterId).value.toLowerCase();
+            let priorityFilter = document.getElementById(priorityFilterId).value.toLowerCase();
+
+            let rows = document.querySelectorAll(`#${tableId} tbody tr`);
+            rows.forEach(row => {
+                let text = row.textContent.toLowerCase();
+                let product = row.cells[3].textContent.toLowerCase().trim();
+                let priority = row.cells[2].textContent.toLowerCase().trim();
+
+                let matchesSearch = text.includes(searchValue);
+                let matchesProduct = !productFilter || product === productFilter;
+                let matchesPriority = !priorityFilter || priority === priorityFilter;
+
+                if (matchesSearch && matchesProduct && matchesPriority) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Event listeners for filtering open, assigned, and scheduled tickets
+        document.getElementById('openSearchInput').addEventListener('input', () => filterTickets('open-tickets-table', 'openSearchInput', 'openProductFilter', 'openPriorityFilter'));
+        document.getElementById('openProductFilter').addEventListener('change', () => filterTickets('open-tickets-table', 'openSearchInput', 'openProductFilter', 'openPriorityFilter'));
+        document.getElementById('openPriorityFilter').addEventListener('change', () => filterTickets('open-tickets-table', 'openSearchInput', 'openProductFilter', 'openPriorityFilter'));
+
+        document.getElementById('assignedSearchInput').addEventListener('input', () => filterTickets('assigned-tickets-table', 'assignedSearchInput', 'assignedProductFilter', 'assignedPriorityFilter'));
+        document.getElementById('assignedProductFilter').addEventListener('change', () => filterTickets('assigned-tickets-table', 'assignedSearchInput', 'assignedProductFilter', 'assignedPriorityFilter'));
+        document.getElementById('assignedPriorityFilter').addEventListener('change', () => filterTickets('assigned-tickets-table', 'assignedSearchInput', 'assignedProductFilter', 'assignedPriorityFilter'));
+
+        document.getElementById('scheduledSearchInput').addEventListener('input', () => filterTickets('scheduled-tickets-table', 'scheduledSearchInput', 'scheduledProductFilter', 'scheduledPriorityFilter'));
+        document.getElementById('scheduledPriorityFilter').addEventListener('change', () => filterTickets('scheduled-tickets-table', 'scheduledSearchInput', 'scheduledProductFilter', 'scheduledPriorityFilter'));
+    </script>
+</body>
+</html>

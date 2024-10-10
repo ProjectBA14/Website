@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
+</head>
+<body>
+    <div class="navigation-bar">
+        {% if user_role == 'admin' %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+            <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+            <a href="{{ url_for('ticket_history') }}">Admin History</a>
+        {% elif user_role == 'it_executive' %}
+            <a href="{{ url_for('it_executive_dashboard') }}">IT executive dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="ticket-history">
+        <h1>Ticket History</h1>
+
+        <!-- Toggle between Normal and Scheduled Tickets -->
+        <div class="toggle-ticket-type">
+            <button class="ticket-type-btn" data-ticket-type="normal">Normal Tickets</button>
+            <button class="ticket-type-btn" data-ticket-type="scheduled">Scheduled Tickets</button>
+        </div>
+
+        <!-- Toggle Buttons for Ticket Status -->
+        <div class="toggle-buttons">
+            <button class="toggle-btn" data-status="all">All Tickets</button>
+            <button class="toggle-btn" data-status="open">Open Tickets</button>
+            <button class="toggle-btn" data-status="in-progress">Assigned Tickets</button>
+            <button class="toggle-btn" data-status="resolved">Resolved Tickets</button>
+            <button class="toggle-btn" data-status="completed">Completed Tickets</button>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-container">
+            <input type="text" id="searchInput" placeholder="Search Title or Description...">
+            <select id="productFilter">
+                <option value="">Filter by Product</option>
+                <option value="projector">Projector</option>
+                <option value="printer">Printer</option>
+                <option value="scanner">Scanner</option>
+                <option value="network-connectivity">Network / Connectivity</option>
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop</option>
+            </select>
+            <select id="priorityFilter">
+                <option value="">Filter by Priority</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+
+        <!-- Normal Tickets Table -->
+        <div class="tickets-section" id="normal-tickets-section">
+            <h2>Normal Tickets</h2>
+            <table id="tickets-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Assigned to</th>
+                        <th>User Email</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Product</th>
+                        <th>Building</th>
+                        <th>Room</th>
+                        <th id="sortDateHeader" style="cursor:pointer;">Created At <span id="sortIndicator">↑↓</span></th>
+                        <th>Action</th>
+                        {% if user_role == 'admin' or user_role == 'user' %}
+                        <th>Completed</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr class="ticket-row" data-ticket-id="{{ ticket.id }}" data-status="{{ ticket.status }}">
+                        <td>{{ ticket.title }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>
+                            {% if ticket.assigned_to %}
+                                {% if ticket.assigned_to is iterable and not ticket.assigned_to is string %}
+                                    {{ ticket.assigned_to | join(', ') }}
+                                {% else %}
+                                    {{ ticket.assigned_to }}
+                                {% endif %}
+                            {% else %}
+                                Unassigned
+                            {% endif %}
+                        </td>
+                        <td><a href="#" class="profile-link" data-email="{{ ticket.user_email }}">{{ ticket.user_email }}</a></td>
+                        <td>{{ ticket.status }}</td>
+                        <td>{{ ticket.priority }}</td>
+                        <td>{{ ticket.product }}</td>
+                        <td>{{ ticket.building }}</td>
+                        <td>{{ ticket.room }}</td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <button class="expand-btn" data-ticket-id="{{ ticket.id }}">View History</button>
+                        </td>
+                        {% if user_role == 'admin' or user_role == 'user' %}
+                        <td>
+                            {% if ticket.status.lower() == 'resolved' %}
+                            <button class="confirm-resolved-btn" data-ticket-id="{{ ticket.id }}" data-response="yes">Yes</button>
+                            <button class="confirm-resolved-btn" data-ticket-id="{{ ticket.id }}" data-response="no">No</button>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <tr class="ticket-history-row" id="history-{{ ticket.id }}">
+                        <td colspan="12">
+                            <div class="history-content">
+                                <h4>Ticket History:</h4>
+                                <ul>
+                                    {% for entry in ticket.history %}
+                                    <li>{{ entry.timestamp }} - {{ entry.status }}: {{ entry.note }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Scheduled Tickets Table -->
+        <div class="tickets-section" id="scheduled-tickets-section" style="display: none;">
+            <h2>Scheduled Tickets</h2>
+            <table id="scheduled-tickets-table">
+                <thead>
+                    <tr>
+                        <th>Event Name</th>
+                        <th>Description</th>
+                        <th>Location</th>
+                        <th>Rooms</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Created By</th>
+                        <th>Additional Requirements</th>
+                        <th id="sortScheduledDateHeader" style="cursor:pointer;">Created At <span id="sortScheduledIndicator">↑↓</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in scheduled_events %}
+                    <tr class="scheduled-row" data-event-id="{{ event.id }}">
+                        <td>{{ event.event_name }}</td>
+                        <td>{{ event.description }}</td>
+                        <td>{{ event.location }}</td>
+                        <td>{{ event.rooms }}</td>
+                        <td>{{ event.date }}</td>
+                        <td>{{ event.start_time }}</td>
+                        <td>{{ event.end_time }}</td>
+                        <td>{{ event.created_by }}</td>
+                        <td>{{ event.additional_requirements }}</td>
+                        <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal for showing user profile -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2>User Profile</h2>
+                <p><strong>Name:</strong> <span id="modal-profile-name"></span></p>
+                <p><strong>Email:</strong> <span id="modal-profile-email"></span></p>
+                <p><strong>Phone:</strong> <span id="modal-profile-phone"></span></p>
+                <p><strong>Role:</strong> <span id="modal-profile-role"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/ticket-history.js') }}"></script>
+</body>
+</html>
