@@ -16,9 +16,15 @@ import google.auth.transport.requests
 # Generate a secret key for Flask (use a secure key in production)
 app_secret_key = secrets.token_hex(16)
 service_account_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+# Write the credentials JSON to a file
+credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+credentials_path = "/tmp/your-service-account-file.json"
+
+with open(credentials_path, "w") as f:
+    f.write(credentials_json)
 
 # Firebase Admin SDK setup
-cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-fce84961ed.json')  # Use your service account key file
+cred = credentials.Certificate(credentials_path)
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'ayushstartup-7277a.appspot.com',
 })
