@@ -17,12 +17,20 @@ import google.auth.transport.requests
 # Generate a secret key for Flask (use a secure key in production)
 app_secret_key = secrets.token_hex(16)
 
-# Firebase Admin SDK setup
-cred = credentials.Certificate(r'ayushstartup-7277a-firebase-adminsdk-rhcac-93e88f954e.json')  # Use your service account key file
+# Load the Firebase service account key from the environment variable
+service_account_key = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY')
+
+if service_account_key is None:
+    raise ValueError("FIREBASE_SERVICE_ACCOUNT_KEY environment variable not set")
+
+# Convert the JSON string to a dictionary
+service_account_info = json.loads(service_account_key)
+
+# Initialize the Firebase Admin SDK with the credentials from the environment variable
+cred = credentials.Certificate(service_account_info)
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'ayushstartup-7277a.appspot.com',  # Use your Firebase storage bucket
 })
-
 # Initialize Firestore DB
 db = firestore.client()
 
@@ -50,11 +58,11 @@ flow = Flow.from_client_config(
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uris": ['https://ticketing-57ep.onrender.com/callback'],
+            "redirect_uris": ['https://localhost:8001/callback'],
         }
     },
     scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-    redirect_uri='https://ticketing-57ep.onrender.com/callback'
+    redirect_uri='https://localhost:8001/callback'
 )
 
 # Configurations for file uploads
