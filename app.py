@@ -13,6 +13,8 @@ import json
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 import google.auth.transport.requests
+from google.auth.exceptions import RefreshError
+
 
 # Generate a secret key for Flask (use a secure key in production)
 app_secret_key = secrets.token_hex(16)
@@ -23,14 +25,19 @@ service_account_key = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY')
 if service_account_key is None:
     raise ValueError("FIREBASE_SERVICE_ACCOUNT_KEY environment variable not set")
 
-# Convert the JSON string to a dictionary
-service_account_info = json.loads(service_account_key)
+try:
+    # Convert the JSON string to a dictionary
+    service_account_info = json.loads(service_account_key)
 
-# Initialize the Firebase Admin SDK with the credentials from the environment variable
-cred = credentials.Certificate(service_account_info)
-firebase_admin.initialize_app(cred, {
-    'storageBucket': 'ayushstartup-7277a.appspot.com',  # Use your Firebase storage bucket
-})
+    # Initialize the Firebase Admin SDK
+    cred = credentials.Certificate(service_account_info)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': 'ayushstartup-7277a.appspot.com',  # Use your Firebase storage bucket
+    })
+
+except RefreshError as e:
+    print(f"Error initializing Firebase: {e}")
+    raise
 # Initialize Firestore DB
 db = firestore.client()
 
