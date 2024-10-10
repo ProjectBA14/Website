@@ -50,11 +50,11 @@ flow = Flow.from_client_config(
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uris": ["http://localhost:8001/callback"],
+            "redirect_uris": ['https://ticketing-57ep.onrender.com/callback'],
         }
     },
     scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-    redirect_uri='http://localhost:8001/callback'
+    redirect_uri='https://ticketing-57ep.onrender.com/callback'
 )
 
 # Configurations for file uploads
