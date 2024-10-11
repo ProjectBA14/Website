@@ -54,7 +54,6 @@ app = Flask(__name__, template_folder=template)
 app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 flow = Flow.from_client_config(
     {
