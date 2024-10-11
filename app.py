@@ -55,6 +55,7 @@ app.secret_key = app_secret_key
 GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
 
+# OAuth Flow configuration
 flow = Flow.from_client_config(
     {
         "web": {
@@ -64,22 +65,21 @@ flow = Flow.from_client_config(
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_secret": GOOGLE_CLIENT_SECRET,
-            "redirect_uris": ['https://localhost:8001/callback', 'https://ticketing-57ep.onrender.com/callback'],
+            "redirect_uris": ['https://ticketing-57ep.onrender.com/callback'],  # Use only the Render URI
         }
     },
-    scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid'],
-    redirect_uri='https://ticketing-57ep.onrender.com/callback'
+    scopes=['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
 )
+
+# Set the redirect_uri to the Render-specific URI
+flow.redirect_uri = 'https://ticketing-57ep.onrender.com/callback'
 
 # Configurations for file uploads
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Determine the redirect URI based on the environment
-if os.getenv('FLASK_ENV') == 'development':
-    redirect_uri = 'https://localhost:8001/callback'
-else:
-    redirect_uri = 'https://ticketing-57ep.onrender.com/callback'
+
 # Helper function to check if the uploaded file is allowed
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -175,8 +175,7 @@ def login_page():
 # Google login route
 @app.route('/google_login')
 def google_login():
-    # Set the redirect_uri dynamically
-    flow.redirect_uri = redirect_uri
+    # The redirect_uri is already set to the Render-specific URI
     authorization_url, state = flow.authorization_url()
     session['state'] = state
     return redirect(authorization_url)
