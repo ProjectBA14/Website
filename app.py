@@ -182,7 +182,16 @@ def google_login():
 
 @app.route('/callback')
 def callback():
-    flow.fetch_token(authorization_response=request.url)
+    try:
+        flow.fetch_token(authorization_response=request.url)
+    except Exception as e:
+        print(f"Error fetching token: {e}")
+        flash("Failed to fetch token.")
+        return redirect(url_for('login_page'))
+
+    if session.get('state') != request.args.get('state'):
+        flash("Invalid state parameter.")
+        return redirect(url_for('login_page'))
 
     if not session['state'] == request.args['state']:
         flash("Invalid state parameter.")
