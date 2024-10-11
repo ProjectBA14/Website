@@ -131,17 +131,18 @@
         </div>
 
         <!-- Normal Ticket Form -->
-        <div id="normalTicket" class="tabcontent active">
-            <h2>Create a Ticket</h2>
-            <form id="create-ticket-form" method="POST" action="{{ url_for('dashboard') }}">
+        <!-- Updated Normal Ticket Form -->
+<div id="normalTicket" class="tabcontent active">
+    <h2>Create a Ticket</h2>
+    <form id="create-ticket-form" method="POST" action="{{ url_for('dashboard') }}">
+        <div class="form-group">
+            <label for="title">Short Description:</label>
+            <input type="text" id="title" name="title" placeholder="Enter a brief description">
+        </div>
                 <div class="form-group">
-                    <label for="title">Title:</label>
-                    <input type="text" id="title" name="title" placeholder="Enter ticket title">
-                </div>
-                <div class="form-group">
-                    <label for="product">Product:</label>
-                    <select id="product" name="product">
-                        <option value="">Select a product</option>
+                    <label for="issue">Issue:</label>
+                    <select id="issue" name="issue">
+                        <option value="">Select an issue</option>
                         <option value="projector">Projector</option>
                         <option value="printer">Printer</option>
                         <option value="scanner">Scanner</option>
@@ -149,12 +150,6 @@
                         <option value="laptop">Laptop</option>
                         <option value="desktop">Desktop</option>
                         <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="issue">Issue:</label>
-                    <select id="issue" name="issue">
-                        <option value="">Select an issue</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -174,7 +169,7 @@
                 </div>
                 <div class="form-group">
                     <label for="description">Description:</label>
-                    <textarea id="description" name="description" placeholder="Enter ticket description"></textarea>
+                    <textarea id="description" name="description" placeholder="Provide a detailed description"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="priority">Priority:</label>
@@ -187,6 +182,7 @@
                 <button type="submit" class="btn-create-ticket" name="create_ticket">Create Ticket</button>
             </form>
         </div>
+
 
         <!-- Scheduling Ticket Form (Admin/Manager only) -->
         {% if user_role in ['admin', 'manager'] %}
