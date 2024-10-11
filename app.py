@@ -52,8 +52,8 @@ def set_it_executive(uid):
 template = "./template"
 app = Flask(__name__, template_folder=template)
 app.secret_key = app_secret_key
-GOOGLE_CLIENT_ID = "682740205264-l0bcvo8a6ht8rh0mo8gc8u1b6lrtu4jn.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_CLIENT_ID = "1061904780000-0067nfgjcnnsm2jefj0qpitqs5sina9b.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
 
 # OAuth Flow configuration
 flow = Flow.from_client_config(
