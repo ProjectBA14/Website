@@ -6,7 +6,7 @@ import os
 import secrets
 import requests
 from firebase_admin.exceptions import FirebaseError  # Use FirebaseError for exceptions
-from datetime import datetime,timedelta,timezone
+from datetime import datetime, timedelta, timezone
 import json
 
 # OAuth libraries
@@ -78,101 +78,11 @@ flow.redirect_uri = 'https://ticketing-57ep.onrender.com/callback'
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# Determine the redirect URI based on the environment
 
 # Helper function to check if the uploaded file is allowed
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-@app.route('/change_password', methods=['GET', 'POST'])
-def change_password():
-    if 'user_token' not in session or not session.get('is_admin'):
-        flash("Only admins can access the password change functionality.", 'error')
-        return redirect(url_for('login_page'))
 
-    if request.method == 'POST':
-        user_email = request.form.get('user_email')
-        new_password = request.form.get('new_password')
-
-        if not user_email or not new_password:
-            flash("Please provide both the email and new password.", 'error')
-            return redirect(url_for('change_password'))
-
-        try:
-            # Get the user by email
-            user = auth.get_user_by_email(user_email)
-            
-            # Update the password
-            auth.update_user(user.uid, password=new_password)
-            flash(f"Password for {user_email} has been changed successfully.", 'success')
-        except firebase_admin.auth.UserNotFoundError:
-            flash(f"User with email {user_email} does not exist.", 'error')
-        except Exception as e:
-            flash(f"Error changing password: {str(e)}", 'error')
-
-        return redirect(url_for('change_password'))
-
-    return render_template('change_password.html')
-
-@app.route('/', methods=['GET', 'POST'])
-def homepage():
-    return redirect('login')
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login_page():
-    if request.method == 'POST':
-        email = request.form['username']
-        password = request.form['password']
-
-        try:
-            # Verify the email and password using Firebase's REST API
-            payload = {
-                "email": email,
-                "password": password,
-                "returnSecureToken": True
-            }
-            response = requests.post(f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={'AIzaSyCEUHsjOvi_5AbRgHSTRE0Tgk6QDcFhCoM'}",
-                                     data=json.dumps(payload),
-                                     headers={"Content-Type": "application/json"})
-            response_data = response.json()
-
-            if 'idToken' not in response_data:
-                flash("Invalid email or password.", 'error')
-                return render_template('login.html')
-
-            # Store the user token and email in the session
-            session['user_token'] = response_data['idToken']
-            session['user_email'] = email
-
-            # Reset session roles to ensure correct roles are assigned
-            session['is_admin'] = False
-            session['is_it_executive'] = False
-
-            # Fetch user from Firebase Admin SDK to check custom claims
-            user = auth.get_user_by_email(email)
-            claims = user.custom_claims
-            if claims:
-                if claims.get('admin'):
-                    session['is_admin'] = True
-                    session['user_role'] = 'admin'
-                    return redirect(url_for('admin_dashboard'))
-                elif claims.get('it_executive'):
-                    session['is_it_executive'] = True
-                    session['user_role'] = 'it_executive'
-                    return redirect(url_for('it_executive_dashboard'))
-                else:
-                    session['user_role'] = 'user'
-                    return redirect(url_for('dashboard'))
-            else:
-                session['user_role'] = 'user'
-                return redirect(url_for('dashboard'))
-
-        except requests.exceptions.RequestException as e:
-            flash(f"Error logging in: {str(e)}", 'error')
-            return render_template('login.html')
-
-    return render_template('login.html')
-# Google login route
 @app.route('/google_login')
 def google_login():
     # The redirect_uri is already set to the Render-specific URI
@@ -183,25 +93,32 @@ def google_login():
 @app.route('/callback')
 def callback():
     try:
+        # Fetch the token
         flow.fetch_token(authorization_response=request.url)
     except Exception as e:
+        # Provide more details if the token fetch fails
         print(f"Error fetching token: {e}")
-        flash("Failed to fetch token.")
+        flash(f"Failed to fetch token. Error: {e}", 'error')
         return redirect(url_for('login_page'))
 
+    # Verify the state parameter to prevent CSRF
     if session.get('state') != request.args.get('state'):
-        flash("Invalid state parameter.")
-        return redirect(url_for('login_page'))
-
-    if not session['state'] == request.args['state']:
-        flash("Invalid state parameter.")
+        flash("Invalid state parameter.", 'error')
         return redirect(url_for('login_page'))
 
     credentials = flow.credentials
     request_session = google.auth.transport.requests.Request()
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials.id_token, request=request_session, audience=GOOGLE_CLIENT_ID
-    )
+
+    try:
+        # Verify the ID token
+        id_info = id_token.verify_oauth2_token(
+            id_token=credentials.id_token, request=request_session, audience=GOOGLE_CLIENT_ID
+        )
+    except ValueError as e:
+        # Handle the case where the ID token is invalid
+        print(f"Invalid ID token: {e}")
+        flash("Failed to verify ID token.", 'error')
+        return redirect(url_for('login_page'))
 
     # Restrict users to only those with a gdgu.org domain
     email = id_info.get('email')
@@ -239,8 +156,101 @@ def callback():
             session['is_admin'] = False
             return redirect(url_for('dashboard'))
     else:
-        flash("You must use an email from the gdgu.org domain.")
+        flash("You must use an email from the gdgu.org domain.", 'error')
         return redirect(url_for('login_page'))
+
+# Add more detailed error messages for debugging
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        email = request.form['username']
+        password = request.form['password']
+
+        try:
+            # Verify the email and password using Firebase's REST API
+            payload = {
+                "email": email,
+                "password": password,
+                "returnSecureToken": True
+            }
+            response = requests.post(
+                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={'AIzaSyCEUHsjOvi_5AbRgHSTRE0Tgk6QDcFhCoM'}",
+                data=json.dumps(payload),
+                headers={"Content-Type": "application/json"}
+            )
+            response_data = response.json()
+
+            if 'idToken' not in response_data:
+                flash(f"Invalid email or password. Error: {response_data.get('error', 'Unknown error')}", 'error')
+                return render_template('login.html')
+
+            # Store the user token and email in the session
+            session['user_token'] = response_data['idToken']
+            session['user_email'] = email
+
+            # Reset session roles to ensure correct roles are assigned
+            session['is_admin'] = False
+            session['is_it_executive'] = False
+
+            # Fetch user from Firebase Admin SDK to check custom claims
+            user = auth.get_user_by_email(email)
+            claims = user.custom_claims
+            if claims:
+                if claims.get('admin'):
+                    session['is_admin'] = True
+                    session['user_role'] = 'admin'
+                    return redirect(url_for('admin_dashboard'))
+                elif claims.get('it_executive'):
+                    session['is_it_executive'] = True
+                    session['user_role'] = 'it_executive'
+                    return redirect(url_for('it_executive_dashboard'))
+                else:
+                    session['user_role'] = 'user'
+                    return redirect(url_for('dashboard'))
+            else:
+                session['user_role'] = 'user'
+                return redirect(url_for('dashboard'))
+
+        except requests.exceptions.RequestException as e:
+            flash(f"Error logging in: {str(e)}", 'error')
+            return render_template('login.html')
+
+    return render_template('login.html')
+
+
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'user_token' not in session or not session.get('is_admin'):
+        flash("Only admins can access the password change functionality.", 'error')
+        return redirect(url_for('login_page'))
+
+    if request.method == 'POST':
+        user_email = request.form.get('user_email')
+        new_password = request.form.get('new_password')
+
+        if not user_email or not new_password:
+            flash("Please provide both the email and new password.", 'error')
+            return redirect(url_for('change_password'))
+
+        try:
+            # Get the user by email
+            user = auth.get_user_by_email(user_email)
+            
+            # Update the password
+            auth.update_user(user.uid, password=new_password)
+            flash(f"Password for {user_email} has been changed successfully.", 'success')
+        except firebase_admin.auth.UserNotFoundError:
+            flash(f"User with email {user_email} does not exist.", 'error')
+        except Exception as e:
+            flash(f"Error changing password: {str(e)}", 'error')
+
+        return redirect(url_for('change_password'))
+
+    return render_template('change_password.html')
+
+@app.route('/', methods=['GET', 'POST'])
+def homepage():
+    return redirect('login')
 
 
 @app.route('/signup', methods=['GET', 'POST'])
