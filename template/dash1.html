@@ -132,56 +132,57 @@
 
         <!-- Normal Ticket Form -->
         <!-- Updated Normal Ticket Form -->
+<!-- Normal Ticket Form -->
 <div id="normalTicket" class="tabcontent active">
     <h2>Create a Ticket</h2>
-    <form id="create-ticket-form" method="POST" action="{{ url_for('dashboard') }}">
+    <form id="create-ticket-form" method="POST" action="{{ url_for('create_ticket') }}"> <!-- Updated action -->
         <div class="form-group">
             <label for="title">Short Description:</label>
-            <input type="text" id="title" name="title" placeholder="Enter a brief description">
+            <input type="text" id="title" name="title" placeholder="Enter a brief description" required>
         </div>
-                <div class="form-group">
-                    <label for="issue">Issue:</label>
-                    <select id="issue" name="issue">
-                        <option value="">Select an issue</option>
-                        <option value="projector">Projector</option>
-                        <option value="printer">Printer</option>
-                        <option value="scanner">Scanner</option>
-                        <option value="network-connectivity">Network / Connectivity</option>
-                        <option value="laptop">Laptop</option>
-                        <option value="desktop">Desktop</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="building">Building:</label>
-                    <select id="building" name="building">
-                        <option value="">Select a building</option>
-                        <option value="a-block">A Block</option>
-                        <option value="b-block">B Block</option>
-                        <option value="c-block">C Block (SUNSTONE)</option>
-                        <option value="d-block">D Block (UID)</option>
-                        <option value="other-building">Other Building</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="room">Room:</label>
-                    <input type="text" id="room" name="room" placeholder="Enter room number">
-                </div>
-                <div class="form-group">
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" placeholder="Provide a detailed description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="priority">Priority:</label>
-                    <select id="priority" name="priority">
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-create-ticket" name="create_ticket">Create Ticket</button>
-            </form>
+        <div class="form-group">
+            <label for="issue">Issue:</label>
+            <select id="issue" name="issue" required>
+                <option value="">Select an issue</option>
+                <option value="projector">Projector</option>
+                <option value="printer">Printer</option>
+                <option value="scanner">Scanner</option>
+                <option value="network-connectivity">Network / Connectivity</option>
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop</option>
+                <option value="other">Other</option>
+            </select>
         </div>
+        <div class="form-group">
+            <label for="building">Building:</label>
+            <select id="building" name="building" required>
+                <option value="">Select a building</option>
+                <option value="a-block">A Block</option>
+                <option value="b-block">B Block</option>
+                <option value="c-block">C Block (SUNSTONE)</option>
+                <option value="d-block">D Block (UID)</option>
+                <option value="other-building">Other Building</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="room">Room:</label>
+            <input type="text" id="room" name="room" placeholder="Enter room number" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" placeholder="Provide a detailed description" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="priority">Priority:</label>
+            <select id="priority" name="priority" required>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-create-ticket" name="create_ticket">Create Ticket</button>
+    </form>
+</div>
 
 
         <!-- Scheduling Ticket Form (Admin/Manager only) -->
