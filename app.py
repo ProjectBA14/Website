@@ -432,7 +432,31 @@ def dashboard():
 
     # Render the dashboard page
     return render_template('dash1.html', tickets=tickets, profile=profile_data, user_role=user_role, scheduled_events=scheduled_events)
+@app.route('/create_ticket', methods=['POST'])
+def create_ticket():
+    title = request.form.get('title')
+    issue = request.form.get('issue')
+    building = request.form.get('building')
+    room = request.form.get('room')
+    description = request.form.get('description')
+    priority = request.form.get('priority')
 
+    # Create a ticket dictionary
+    ticket_data = {
+        'title': title,
+        'issue': issue,
+        'building': building,
+        'room': room,
+        'description': description,
+        'priority': priority
+    }
+
+    # Send ticket data to Firebase
+    try:
+        db.collection('tickets').add(ticket_data)
+        return jsonify({"status": "success", "message": "Ticket created successfully!"}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/create_scheduling_ticket', methods=['POST'])
 def create_scheduling_ticket():
