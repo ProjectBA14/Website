@@ -140,8 +140,16 @@
                         <td>{{ ticket.status }}</td>
                         <td>{{ ticket.priority }}</td>
                         <td>{{ ticket.product }}</td>
-                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td>
+                            {% if ticket.created_at %}
+                                {{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% else %}
+                                Not Available
+                            {% endif %}
+
+                        </td>
+                        
+                                                <td>
                             <div class="assign-container">
                                 <form method="POST" action="{{ url_for('admin_tasks') }}">
                                     <select name="it_executive" required>

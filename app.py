@@ -14,6 +14,7 @@ from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 import google.auth.transport.requests
 from google.auth.exceptions import RefreshError
+from google.cloud.firestore_v1 import _helpers
 
 
 # Generate a secret key for Flask (use a secure key in production)
@@ -434,6 +435,14 @@ def dashboard():
     return render_template('dash1.html', tickets=tickets, profile=profile_data, user_role=user_role, scheduled_events=scheduled_events)
 @app.route('/create_ticket', methods=['POST'])
 def create_ticket():
+    # Ensure user is logged in
+    if 'user_token' not in session:
+        flash("Please log in to create a ticket.", 'error')
+        return redirect(url_for('login_page'))
+
+    user_email = session.get('user_email', None)
+
+    # Get form data
     title = request.form.get('title')
     issue = request.form.get('issue')
     building = request.form.get('building')
@@ -441,22 +450,32 @@ def create_ticket():
     description = request.form.get('description')
     priority = request.form.get('priority')
 
-    # Create a ticket dictionary
+    # Validate data
+    if not title or not issue or not building or not room or not description or not priority:
+        flash("All fields are required to create a ticket.", 'error')
+        return redirect(url_for('dashboard'))
+
+    # Create a ticket document
     ticket_data = {
         'title': title,
         'issue': issue,
         'building': building,
         'room': room,
         'description': description,
-        'priority': priority
+        'priority': priority,
+        'status': 'Open',  # Initial status of the ticket
+        'user_email': user_email,
+        'created_at': firestore.SERVER_TIMESTAMP  # Firestore-generated timestamp
     }
 
-    # Send ticket data to Firebase
     try:
+        # Add ticket to Firestore
         db.collection('tickets').add(ticket_data)
-        return jsonify({"status": "success", "message": "Ticket created successfully!"}), 201
+        flash("Ticket created successfully!", 'success')
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        flash(f"An error occurred while creating the ticket: {e}", 'error')
+
+    return redirect(url_for('dashboard'))
 
 @app.route('/create_scheduling_ticket', methods=['POST'])
 def create_scheduling_ticket():
@@ -786,7 +805,13 @@ def admin_tasks():
 
     # Fetch all tickets
     tickets_ref = db.collection('tickets').stream()
-    tickets = [{'id': ticket.id, **ticket.to_dict()} for ticket in tickets_ref]
+    tickets = []
+    for ticket in tickets_ref:
+        ticket_data = ticket.to_dict()
+        ticket_data['id'] = ticket.id
+        # Handle missing created_at by providing a default value
+        ticket_data['created_at'] = ticket_data.get('created_at', None)
+        tickets.append(ticket_data)
 
     # Fetch all IT executives
     it_executives_ref = db.collection('it_executives').stream()
@@ -795,17 +820,16 @@ def admin_tasks():
     # Update statistics for IT executives
     for ticket in tickets:
         assigned_to = ticket.get('assigned_to')
-        if assigned_to and isinstance(assigned_to, list):
-            assigned_time = ticket.get('created_at')
-            if assigned_time:
-                for exec in it_executives:
-                    if exec['email'] in assigned_to:
-                        if start_of_today <= assigned_time <= end_of_today:
-                            exec.setdefault('tickets_today', 0)
-                            exec['tickets_today'] += 1
-                        elif assigned_time < three_days_ago:
-                            exec.setdefault('backlog_count', 0)
-                            exec['backlog_count'] += 1
+        assigned_time = ticket.get('created_at')
+        if assigned_to and isinstance(assigned_to, list) and assigned_time:
+            for exec in it_executives:
+                if exec['email'] in assigned_to:
+                    if start_of_today <= assigned_time <= end_of_today:
+                        exec.setdefault('tickets_today', 0)
+                        exec['tickets_today'] += 1
+                    elif assigned_time < three_days_ago:
+                        exec.setdefault('backlog_count', 0)
+                        exec['backlog_count'] += 1
 
     # Fetch all scheduled events
     scheduled_events_ref = db.collection('scheduled_events').stream()
@@ -814,6 +838,8 @@ def admin_tasks():
     return render_template('admin_tasks.html', tickets=tickets, it_executives=it_executives, scheduled_events=scheduled_events, now=now)
 
 
+
+from google.cloud.firestore_v1 import _helpers
 
 @app.route('/ticket_history', methods=['GET'])
 def ticket_history():
@@ -833,48 +859,47 @@ def ticket_history():
     elif session.get('is_it_executive'):
         user_role = 'it_executive'
 
-    # Debug logging for role
-    print(f"User email: {user_email}, Role: {user_role}")
+    print(f"User email: {user_email}, Role: {user_role}")  # Debug logging
 
     tickets = []
 
-    # Fetch tickets based on the user role
     try:
         if user_role == 'admin':
-            # Admin can see all tickets
             tickets_ref = db.collection('tickets').stream()
-            tickets = [{'id': ticket.id, **ticket.to_dict()} for ticket in tickets_ref]
         elif user_role == 'it_executive':
-            # IT Executives can see assigned tickets and open tickets
             assigned_tickets_ref = db.collection('tickets').where('assigned_to', 'array_contains', user_email).stream()
             open_tickets_ref = db.collection('tickets').where('status', '==', 'Open').stream()
-            tickets = [{'id': ticket.id, **ticket.to_dict()} for ticket in assigned_tickets_ref]
-            tickets += [{'id': ticket.id, **ticket.to_dict()} for ticket in open_tickets_ref]
+            tickets_ref = list(assigned_tickets_ref) + list(open_tickets_ref)
         else:
-            # Regular users can only see their own tickets (open, assigned, and resolved)
             tickets_ref = db.collection('tickets').where('user_email', '==', user_email).stream()
-            tickets = [{'id': ticket.id, **ticket.to_dict()} for ticket in tickets_ref]
+
+        for ticket in tickets_ref:
+            ticket_data = ticket.to_dict()
+            ticket_data['id'] = ticket.id
+            
+            # Handle DatetimeWithNanoseconds conversion
+            created_at = ticket_data.get('created_at')
+            if created_at and isinstance(created_at, _helpers.DatetimeWithNanoseconds):
+                ticket_data['created_at'] = created_at.replace(tzinfo=None)
+            else:
+                ticket_data['created_at'] = None
+
+            ticket_data['status'] = ticket_data.get('status', 'Unknown')
+            ticket_data['assigned_to'] = ticket_data.get('assigned_to', [])
+            ticket_data['assigned_to_display'] = ', '.join(ticket_data['assigned_to']) if ticket_data['assigned_to'] else 'Unassigned'
+
+            tickets.append(ticket_data)
+
     except Exception as e:
-        # Log the error for debugging
         print(f"Error fetching tickets for {user_role}: {str(e)}")
         flash("Error fetching tickets. Please try again.")
         return redirect(url_for('dashboard'))
 
-    # Handle both string and array cases for assigned_to
     for ticket in tickets:
-        assigned_to = ticket.get('assigned_to')
-        if isinstance(assigned_to, list):
-            ticket['assigned_to_display'] = ', '.join(assigned_to)
-        elif isinstance(assigned_to, str):
-            ticket['assigned_to_display'] = assigned_to
-        else:
-            ticket['assigned_to_display'] = 'Unassigned'
-
-        # Debugging the ticket data
         print(f"Ticket ID: {ticket['id']}, Assigned To: {ticket['assigned_to_display']}, Status: {ticket['status']}")
 
-    # Render the template with the fetched tickets
     return render_template('ticket_history.html', tickets=tickets, user_role=user_role)
+
 
 
 
@@ -948,5 +973,5 @@ def logout():
     return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8001)))
 

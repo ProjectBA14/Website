@@ -107,8 +107,16 @@
                         <td>{{ ticket.product }}</td>
                         <td>{{ ticket.building }}</td>
                         <td>{{ ticket.room }}</td>
-                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td>
+                            {% if ticket.created_at %}
+    {{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+{% else %}
+    Not Available
+{% endif %}
+
+                        </td>
+                        
+                                                <td>
                             <button class="expand-btn" data-ticket-id="{{ ticket.id }}">View History</button>
                         </td>
                         {% if user_role == 'admin' or user_role == 'user' %}
