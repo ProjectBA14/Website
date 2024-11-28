@@ -104,16 +104,22 @@
         <header class="header">
             <div class="navigation-bar">
                 {% if user_role == 'admin' %}
+                <a href="{{ url_for('homepage') }}">Homepage</a>
+
                     <a href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
                     <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
                     <a href="{{ url_for('ticket_history') }}">Admin History</a>
                 {% elif user_role == 'it_executive' %}
+                <a href="{{ url_for('homepage') }}">Homepage</a>
+
                     <a href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('it_executive_dashboard') }}">IT Executive Dashboard</a>
                     <a href="{{ url_for('profile') }}">Profile</a>
                     <a href="{{ url_for('ticket_history') }}">Ticket History</a>
                 {% else %}
+                <a href="{{ url_for('homepage') }}">Homepage</a>
+
                     <a href="{{ url_for('dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('profile') }}">Profile</a>
                     <a href="{{ url_for('ticket_history') }}">Ticket History</a>
