@@ -286,17 +286,6 @@ def signup():
             return jsonify({'error': 'An unexpected error occurred.'}), 400
 
     return render_template('signup.html')
-@app.route('/', methods=['GET', 'POST'])
-def homepage():
-    # Check if the user is logged in
-    if 'user_token' not in session:
-        return redirect(url_for('login_page'))
-
-    # Get user claims and role from session
-    user_role = 'admin' if session.get('is_admin') else 'it_executive' if session.get('is_it_executive') else 'user'
-
-    return render_template('homepage.html', user_role=user_role)
-
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
