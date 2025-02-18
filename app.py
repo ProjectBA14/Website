@@ -249,9 +249,35 @@ def change_password():
 
     return render_template('change_password.html')
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def homepage():
-    return redirect('login')
+    if 'user_token' not in session:
+        flash("Please log in to access the dashboard.")
+        return redirect(url_for('login_page'))
+    
+    user_links = []
+    
+    try:
+        # Fetch user details from Firebase
+        user = auth.get_user(session['user_token'])
+        claims = user.custom_claims or {}
+        
+        # Default Dashboard for all users
+        user_links.append({'name': 'User Dashboard', 'url': url_for('dashboard')})
+        
+        # Admin-only links
+        if claims.get('admin'):
+            user_links.append({'name': 'Admin Dashboard', 'url': url_for('admin_dashboard')})
+        
+        # IT Executive-only links
+        if claims.get('it_executive'):
+            user_links.append({'name': 'IT Executive Dashboard', 'url': url_for('it_executive_dashboard')})
+        
+    except Exception as e:
+        flash("An error occurred while fetching user permissions.")
+        return redirect(url_for('login_page'))
+    
+    return render_template('homepage.html', user_links=user_links)
 
 
 @app.route('/signup', methods=['GET', 'POST'])
