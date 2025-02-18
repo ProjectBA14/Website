@@ -249,36 +249,43 @@ def change_password():
 
     return render_template('change_password.html')
 
-@app.route('/')
+@app.route('/homepage')
 def homepage():
-    if 'user_token' not in session:
-        flash("Please log in to access the dashboard.")
-        return redirect(url_for('login_page'))
-    
-    user_links = []
-    
-    try:
-        # Fetch user details from Firebase
-        user = auth.get_user(session['user_token'])
-        claims = user.custom_claims or {}
-        
-        # Default Dashboard for all users
-        user_links.append({'name': 'User Dashboard', 'url': url_for('dashboard')})
-        
-        # Admin-only links
-        if claims.get('admin'):
-            user_links.append({'name': 'Admin Dashboard', 'url': url_for('admin_dashboard')})
-        
-        # IT Executive-only links
-        if claims.get('it_executive'):
-            user_links.append({'name': 'IT Executive Dashboard', 'url': url_for('it_executive_dashboard')})
-        
-    except Exception as e:
-        flash("An error occurred while fetching user permissions.")
-        return redirect(url_for('login_page'))
-    
-    return render_template('homepage.html', user_links=user_links)
+    # Determine user role
+    user_role = 'user'  # Default role
+    if session.get('is_admin'):
+        user_role = 'admin'
+    elif session.get('is_it_executive'):
+        user_role = 'it_executive'
 
+    # Define links based on user role
+    role_links = {
+        'admin': [
+            {'name': 'Homepage', 'url': url_for('homepage')},
+            {'name': 'Dashboard', 'url': url_for('dashboard')},
+            {'name': 'Admin Dashboard', 'url': url_for('admin_dashboard')},
+            {'name': 'Admin Tasks', 'url': url_for('admin_tasks')},
+            {'name': 'Admin History', 'url': url_for('ticket_history')}
+        ],
+        'it_executive': [
+            {'name': 'Homepage', 'url': url_for('homepage')},
+            {'name': 'Dashboard', 'url': url_for('dashboard')},
+            {'name': 'IT Executive Dashboard', 'url': url_for('it_executive_dashboard')},
+            {'name': 'Profile', 'url': url_for('profile')},
+            {'name': 'Ticket History', 'url': url_for('ticket_history')}
+        ],
+        'user': [
+            {'name': 'Homepage', 'url': url_for('homepage')},
+            {'name': 'Dashboard', 'url': url_for('dashboard')},
+            {'name': 'Profile', 'url': url_for('profile')},
+            {'name': 'Ticket History', 'url': url_for('ticket_history')}
+        ]
+    }
+
+    # Get links based on the user's role
+    allowed_links = role_links.get(user_role, [])
+
+    return render_template('homepage.html', allowed_links=allowed_links, user_role=user_role)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
