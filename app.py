@@ -249,8 +249,17 @@ def change_password():
 
     return render_template('change_password.html')
 
-@app.route('/homepage')
+from flask import Flask, render_template, session, url_for, redirect, flash
+
+app = Flask(__name__)
+
+@app.route('/')
 def homepage():
+    # Ensure the user is logged in
+    if 'user_token' not in session:
+        flash("Please log in to access the dashboard.")
+        return redirect(url_for('login_page'))
+
     # Determine user role
     user_role = 'user'  # Default role
     if session.get('is_admin'):
@@ -286,6 +295,7 @@ def homepage():
     allowed_links = role_links.get(user_role, [])
 
     return render_template('homepage.html', allowed_links=allowed_links, user_role=user_role)
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
