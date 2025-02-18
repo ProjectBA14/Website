@@ -249,9 +249,6 @@ def change_password():
 
     return render_template('change_password.html')
 
-from flask import Flask, render_template, session, url_for, redirect, flash
-
-app = Flask(__name__)
 
 @app.route('/')
 def homepage():
