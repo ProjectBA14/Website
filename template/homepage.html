@@ -41,14 +41,42 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to the Homepage</h1>
-        <ul>
-            {% for link in allowed_links %}
+  <header>
+    <h1>Welcome to My Homepage</h1>
+    <p>Your tagline or introduction goes here.</p>
+  </header>
+
+  <nav>
+    <ul>
+      {% for link in allowed_links %}
                 <li><a href="{{ link.url }}">{{ link.name }}</a></li>
             {% endfor %}
-        </ul>
-        <p><a href="{{ url_for('logout') }}">Logout</a></p>
-    </div>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="home">
+      <h2>Home</h2>
+      <p>This is the home section. </p>
+    </section>
+
+    <section id="about">
+      <h2>Profile</h2>
+      <p>Create your profile</p>
+    </section>
+
+    <section id="services">
+      <h2>Manage</h2>
+      <p>List and describe the services or products you offer.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Include your contact information</p>
+    </section>
+  </main>
+
+  <footer>
+  </footer>
 </body>
 </html>
