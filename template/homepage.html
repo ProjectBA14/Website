@@ -3,48 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="{{ url_for('static', filename='it-dash-style.css') }}">
+
     <title>Homepage</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-        }
-        ul {
-            list-style: none;
+            background-color: #f9f9f9;
+            margin: 0;
             padding: 0;
         }
-        li {
-            margin: 10px 0;
+
+        .container {
+            width: 90%;
+            margin: auto;
+            padding-top: 30px;
         }
-        a {
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        a:hover {
-            text-decoration: underline;
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .assign-container {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            gap: 5px;
+        }
+
+        .assign-button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-history-btn {
+            background-color: #007bff;
+            color: #fff;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .view-history-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .toggleable-section {
+            display: none;
+        }
+
+        .toggleable-section.active {
+            display: block;
         }
     </style>
 </head>
 <body>
-  <header>
-    <h1>Welcome to My Homepage</h1>
-    <p>Your tagline or introduction goes here.</p>
-  </header>
+
 
   <nav>
     <ul>
