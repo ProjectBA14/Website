@@ -1003,7 +1003,86 @@ def confirm_resolved_ticket(ticket_id):
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+# Route for generating reports and analytics
+@app.route('/generate_report', methods=['GET', 'POST'])
+def generate_report():
+    if 'user_token' not in session:
+        flash("Please log in to generate reports.")
+        return redirect(url_for('login_page'))
 
+    user_email = session.get('user_email')
+    if not user_email:
+        flash("User email not found in session.")
+        return redirect(url_for('login_page'))
+
+    filters = {
+        'it_executive': request.form.get('it_executive', ''),
+        'month': request.form.get('month', ''),
+        'item': request.form.get('item', ''),
+        'location': request.form.get('location', ''),
+        'priority': request.form.get('priority', ''),
+        'issue': request.form.get('issue', ''),
+        'product': request.form.get('product', ''),
+        'room': request.form.get('room', ''),
+        'building': request.form.get('building', ''),
+        'status': request.form.get('status', ''),
+        'user_email': request.form.get('user_email', '')
+    }
+
+    try:
+        tickets_ref = db.collection('tickets')
+        query = tickets_ref
+        
+        if filters['it_executive']:
+            query = query.where('assigned_to', 'array_contains', filters['it_executive'])
+        if filters['month']:
+            month_start = datetime.strptime(filters['month'], "%Y-%m")
+            month_end = month_start + timedelta(days=30)
+            query = query.where('created_at', '>=', month_start).where('created_at', '<=', month_end)
+        if filters['item']:
+            query = query.where('item', '==', filters['item'])
+        if filters['location']:
+            query = query.where('location', '==', filters['location'])
+        if filters['priority']:
+            query = query.where('priority', '==', filters['priority'])
+        if filters['issue']:
+            query = query.where('issue', '==', filters['issue'])
+        if filters['product']:
+            query = query.where('product', '==', filters['product'])
+        if filters['room']:
+            query = query.where('room', '==', filters['room'])
+        if filters['building']:
+            query = query.where('building', '==', filters['building'])
+        if filters['status']:
+            query = query.where('status', '==', filters['status'])
+        if filters['user_email']:
+            query = query.where('user_email', '==', filters['user_email'])
+
+        tickets = [ticket.to_dict() for ticket in query.stream()]
+
+    except Exception as e:
+        flash("Error generating report.")
+        return redirect(url_for('dashboard'))
+
+    return render_template('generate_report.html', tickets=tickets, filters=filters)
+
+# Route to download reports as CSV
+@app.route('/download_report', methods=['POST'])
+def download_report():
+    tickets = request.json.get('tickets', [])
+    csv_filename = 'ticket_report.csv'
+    
+    csv_content = "ID,Created At,Status,Assigned To,Item,Location,Priority,Issue,Product,Room,Building,User Email\n"
+    for ticket in tickets:
+        csv_content += f"{ticket.get('id', '')},{ticket.get('created_at', '')},{ticket.get('status', '')}," \
+                       f"{', '.join(ticket.get('assigned_to', []))},{ticket.get('item', '')},{ticket.get('location', '')}," \
+                       f"{ticket.get('priority', '')},{ticket.get('issue', '')},{ticket.get('product', '')}," \
+                       f"{ticket.get('room', '')},{ticket.get('building', '')},{ticket.get('user_email', '')}\n"
+    
+    response = make_response(csv_content)
+    response.headers['Content-Disposition'] = f'attachment; filename={csv_filename}'
+    response.headers['Content-Type'] = 'text/csv'
+    return response
 
 @app.route('/logout')
 def logout():
