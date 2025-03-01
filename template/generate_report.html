@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='it-dash-style.css') }}">
+    <style>
+        .report-container {
+            width: 80%;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-container select, .filter-container input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .download-btn {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation-bar">
+        <a href="{{ url_for('homepage') }}">Homepage</a>
+        <a href="{{ url_for('it_executive_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('profile') }}">Profile</a>
+        <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+    
+    <div class="report-container">
+        <h1>Generate Reports</h1>
+        <div class="filter-container">
+            <input type="text" id="searchInput" placeholder="Search Tickets...">
+            <select id="executiveFilter">
+                <option value="">Filter by IT Executive</option>
+                {% for executive in executives %}
+                <option value="{{ executive.email }}">{{ executive.name }}</option>
+                {% endfor %}
+            </select>
+            <select id="monthFilter">
+                <option value="">Filter by Month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <select id="statusFilter">
+                <option value="">Filter by Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Completed">Completed</option>
+            </select>
+            <select id="locationFilter">
+                <option value="">Filter by Location</option>
+                <option value="b-block">B-Block</option>
+                <option value="a-block">A-Block</option>
+            </select>
+        </div>
+        
+        <table id="report-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>IT Executive</th>
+                    <th>Building</th>
+                    <th>Room</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>{{ ticket.title }}</td>
+                    <td>{{ ticket.assigned_to[0] if ticket.assigned_to else 'Unassigned' }}</td>
+                    <td>{{ ticket.building }}</td>
+                    <td>{{ ticket.room }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <button class="download-btn" onclick="downloadReport()">Download Report</button>
+    </div>
+    
+    <script>
+        function downloadReport() {
+            window.location.href = "{{ url_for('download_report') }}";
+        }
+    </script>
+</body>
+</html>
