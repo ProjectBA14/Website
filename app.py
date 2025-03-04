@@ -857,17 +857,23 @@ def admin_tasks():
 
     # Update statistics for IT executives
     for ticket in tickets:
-        assigned_to = ticket.get('assigned_to')
-        assigned_time = ticket.get('created_at')
-        if assigned_to and isinstance(assigned_to, list) and assigned_time:
-            for exec in it_executives:
-                if exec['email'] in assigned_to:
-                    if start_of_today <= assigned_time <= end_of_today:
-                        exec.setdefault('tickets_today', 0)
-                        exec['tickets_today'] += 1
-                    elif assigned_time < three_days_ago:
-                        exec.setdefault('backlog_count', 0)
-                        exec['backlog_count'] += 1
+    assigned_to = ticket.get('assigned_to', [])  # Ensure it's a list
+    assigned_time = ticket.get('created_at')
+
+    # Convert Firestore timestamp to datetime
+    if isinstance(assigned_time, dict) and 'seconds' in assigned_time:
+        assigned_time = datetime.utcfromtimestamp(assigned_time['seconds'])
+
+    if assigned_to and isinstance(assigned_to, list) and isinstance(assigned_time, datetime):
+        for exec in it_executives:
+            if exec.get('email') and exec['email'] in assigned_to:
+                if start_of_today <= assigned_time <= end_of_today:
+                    exec.setdefault('tickets_today', 0)
+                    exec['tickets_today'] += 1
+                elif assigned_time < three_days_ago:
+                    exec.setdefault('backlog_count', 0)
+                    exec['backlog_count'] += 1
+
 
     # Fetch all scheduled events
     scheduled_events_ref = db.collection('scheduled_events').stream()
