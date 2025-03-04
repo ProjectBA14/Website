@@ -1006,6 +1006,9 @@ def confirm_resolved_ticket(ticket_id):
 # Route for generating reports and analytics
 @app.route('/reports')
 def reports():
+    if 'user_token' not in session or not session.get('is_admin'):
+        flash("You must be an admin to access this page.", 'error')
+        return redirect(url_for('login_page'))
     return render_template('generate_report.html')
 
 @app.route('/users', methods=['GET'])
