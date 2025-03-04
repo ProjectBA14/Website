@@ -46,9 +46,46 @@
             width: 100%;
             height: auto;
         }
+        /* Navbar Styling */
+        .navbar {
+          background-color: #000;
+          padding: 10px 20px;
+          text-align: center;
+        }
+        
+        .nav-links {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        
+        .nav-links li {
+          display: inline-block;
+          margin-right: 20px;
+        }
+        
+        .nav-links a {
+          color: white;
+          text-decoration: none;
+          font-weight: bold;
+          padding: 5px 10px;
+        }
+        
+        .nav-links a:hover {
+          text-decoration: underline;
+        }
     </style>
 </head>
 <body>
+    <div class="navigation-bar">
+        <a href="{{ url_for('homepage') }}">Homepage</a>
+
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+        <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+        <a href="{{ url_for('ticket_history') }}">Admin History</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
     <div class="container">
         <h1>Firestore Ticket Report</h1>
         <button onclick="downloadCSV()">Download CSV</button>
