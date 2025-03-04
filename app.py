@@ -628,30 +628,24 @@ def it_executive_dashboard():
     for ticket in assigned_tickets + unassigned_tickets:
         assigned_to = ticket.get('assigned_to')
         if isinstance(assigned_to, list):
-            # Join the list elements if it's an array
             ticket['assigned_to_display'] = ', '.join(assigned_to)
         elif isinstance(assigned_to, str):
-            # If it's a string, use it directly
             ticket['assigned_to_display'] = assigned_to
         else:
-            # If there's no assigned_to value, mark it as "Unassigned"
             ticket['assigned_to_display'] = 'Unassigned'
 
     if request.method == 'POST':
-        # Handle accepting a ticket (if a ticket ID is provided)
+        # Handle accepting a ticket
         if 'ticket_id' in request.form:
             ticket_id = request.form.get('ticket_id')
             try:
-                # Step 1: Accept ticket, set status to 'In Progress'
                 db.collection('tickets').document(ticket_id).update({
-                    'assigned_to': firestore.ArrayUnion([user_email]),  # Append the user's email to the list
+                    'assigned_to': firestore.ArrayUnion([user_email]),
                     'status': 'In Progress'
                 })
 
-                # Step 2: Use Python datetime to generate a timestamp manually
                 current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-                # Step 3: Update history manually with the current timestamp
                 db.collection('tickets').document(ticket_id).update({
                     'history': firestore.ArrayUnion([{
                         'status': 'In Progress',
@@ -673,10 +667,9 @@ def it_executive_dashboard():
                 try:
                     ticket_ref = db.collection('tickets').document(ticket_id)
 
-                    # Step 1: Update both the general status field and history
                     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     ticket_ref.update({
-                        'status': status,  # Update the main status
+                        'status': status,
                         'history': firestore.ArrayUnion([{
                             'status': status,
                             'timestamp': current_time,
@@ -687,9 +680,30 @@ def it_executive_dashboard():
                 except Exception as e:
                     flash(f'Error updating ticket status: {str(e)}', 'error')
 
+        # Handle updating ticket priority
+        elif 'update-priority' in request.form:
+            ticket_id = request.form.get('ticket-id')
+            new_priority = request.form.get('ticket-priority')
+
+            if ticket_id and new_priority:
+                try:
+                    ticket_ref = db.collection('tickets').document(ticket_id)
+
+                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    ticket_ref.update({
+                        'priority': new_priority,
+                        'history': firestore.ArrayUnion([{
+                            'status': 'Priority Updated',
+                            'timestamp': current_time,
+                            'note': f'Priority changed to {new_priority} by {user_email}'
+                        }])
+                    })
+                    flash(f'Ticket {ticket_id} priority updated to {new_priority}!', 'success')
+                except Exception as e:
+                    flash(f'Error updating ticket priority: {str(e)}', 'error')
+
         return redirect(url_for('it_executive_dashboard'))
 
-    # Render the template with the fetched tickets
     return render_template('it_executive_dashboard.html', assigned_tickets=assigned_tickets,
                            unassigned_tickets=unassigned_tickets, user_email=user_email)
 
