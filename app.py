@@ -861,7 +861,7 @@ def admin_tasks():
         assigned_time = ticket.get('created_at')
         if assigned_to and isinstance(assigned_to, list) and assigned_time:
             for exec in it_executives:
-                if(exec['email'] in assigned_to):
+                if exec['email'] in assigned_to:
                     if start_of_today <= assigned_time <= end_of_today:
                         exec.setdefault('tickets_today', 0)
                         exec['tickets_today'] += 1
