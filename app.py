@@ -1043,7 +1043,7 @@ def get_users():
 @app.route('/report', methods=['GET'])
 def get_report():
     """Fetch ticket data from Firestore, filter by assigned person, month, and date range, and return stats."""
-        assigned_filter = request.args.get('assigned', 'all')
+    assigned_filter = request.args.get('assigned', 'all')
     month_filter = request.args.get('month', 'all')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
