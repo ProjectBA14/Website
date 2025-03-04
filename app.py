@@ -1030,7 +1030,7 @@ def get_users():
 @app.route('/report', methods=['GET'])
 def get_report():
     """Fetch ticket data from Firestore, filter by assigned person, month, and date range, and return stats."""
-    assigned_filter = request.args.get('assigned', 'all')
+        assigned_filter = request.args.get('assigned', 'all')
     month_filter = request.args.get('month', 'all')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
@@ -1047,6 +1047,7 @@ def get_report():
     monthly_counts = {}
     assigned_counts = {}
     user_status_counts = {}  # Stores status-wise ticket count per user
+    product_counts = {}  # NEW: Track number of tickets per product
 
     filtered_tickets = []
 
@@ -1054,6 +1055,7 @@ def get_report():
         data = ticket.to_dict()
         assigned_to = data.get('assigned_to', [])
         created_at = data.get('created_at')
+        product = data.get('product', 'Unknown')  # Get product name
 
         # Convert Firestore timestamp to datetime
         if isinstance(created_at, dict) and 'seconds' in created_at:
@@ -1088,8 +1090,11 @@ def get_report():
                 # Track ticket statuses for each assigned person
                 if person not in user_status_counts:
                     user_status_counts[person] = {"Open": 0, "Completed": 0, "Pending": 0}
-                
+
                 user_status_counts[person][status] = user_status_counts[person].get(status, 0) + 1
+
+            # Count tickets by product
+            product_counts[product] = product_counts.get(product, 0) + 1  # NEW
 
             filtered_tickets.append(data)
 
@@ -1098,8 +1103,10 @@ def get_report():
         "priority_counts": priority_counts,
         "monthly_counts": monthly_counts,
         "assigned_counts": assigned_counts,
-        "user_status_counts": user_status_counts
+        "user_status_counts": user_status_counts,
+        "product_counts": product_counts  # NEW: Include in response
     })
+
 
 @app.route('/download', methods=['GET'])
 def download_csv():
