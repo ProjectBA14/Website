@@ -1004,86 +1004,149 @@ def confirm_resolved_ticket(ticket_id):
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Route for generating reports and analytics
-@app.route('/generate_report', methods=['GET', 'POST'])
-def generate_report():
-    if 'user_token' not in session:
-        flash("Please log in to generate reports.")
-        return redirect(url_for('login_page'))
+@app.route('/reports')
+def reports():
+    return render_template('generate_report.html')
 
-    user_email = session.get('user_email')
-    if not user_email:
-        flash("User email not found in session.")
-        return redirect(url_for('login_page'))
+@app.route('/users', methods=['GET'])
+def get_users():
+    """Fetch unique assigned users from Firestore."""
+    tickets_ref = db.collection('tickets')
+    tickets = tickets_ref.stream()
 
-    filters = {
-        'it_executive': request.form.get('it_executive', ''),
-        'month': request.form.get('month', ''),
-        'item': request.form.get('item', ''),
-        'location': request.form.get('location', ''),
-        'priority': request.form.get('priority', ''),
-        'issue': request.form.get('issue', ''),
-        'product': request.form.get('product', ''),
-        'room': request.form.get('room', ''),
-        'building': request.form.get('building', ''),
-        'status': request.form.get('status', ''),
-        'user_email': request.form.get('user_email', '')
-    }
+    assigned_users = set()  # Using a set to avoid duplicates
 
-    try:
-        tickets_ref = db.collection('tickets')
-        query = tickets_ref
-        
-        if filters['it_executive']:
-            query = query.where('assigned_to', 'array_contains', filters['it_executive'])
-        if filters['month']:
-            month_start = datetime.strptime(filters['month'], "%Y-%m")
-            month_end = month_start + timedelta(days=30)
-            query = query.where('created_at', '>=', month_start).where('created_at', '<=', month_end)
-        if filters['item']:
-            query = query.where('item', '==', filters['item'])
-        if filters['location']:
-            query = query.where('location', '==', filters['location'])
-        if filters['priority']:
-            query = query.where('priority', '==', filters['priority'])
-        if filters['issue']:
-            query = query.where('issue', '==', filters['issue'])
-        if filters['product']:
-            query = query.where('product', '==', filters['product'])
-        if filters['room']:
-            query = query.where('room', '==', filters['room'])
-        if filters['building']:
-            query = query.where('building', '==', filters['building'])
-        if filters['status']:
-            query = query.where('status', '==', filters['status'])
-        if filters['user_email']:
-            query = query.where('user_email', '==', filters['user_email'])
-
-        tickets = [ticket.to_dict() for ticket in query.stream()]
-
-    except Exception as e:
-        flash("Error generating report.")
-        return redirect(url_for('dashboard'))
-
-    return render_template('generate_report.html', tickets=tickets, filters=filters)
-
-# Route to download reports as CSV
-@app.route('/download_report', methods=['POST'])
-def download_report():
-    tickets = request.json.get('tickets', [])
-    csv_filename = 'ticket_report.csv'
-    
-    csv_content = "ID,Created At,Status,Assigned To,Item,Location,Priority,Issue,Product,Room,Building,User Email\n"
     for ticket in tickets:
-        csv_content += f"{ticket.get('id', '')},{ticket.get('created_at', '')},{ticket.get('status', '')}," \
-                       f"{', '.join(ticket.get('assigned_to', []))},{ticket.get('item', '')},{ticket.get('location', '')}," \
-                       f"{ticket.get('priority', '')},{ticket.get('issue', '')},{ticket.get('product', '')}," \
-                       f"{ticket.get('room', '')},{ticket.get('building', '')},{ticket.get('user_email', '')}\n"
-    
-    response = make_response(csv_content)
-    response.headers['Content-Disposition'] = f'attachment; filename={csv_filename}'
-    response.headers['Content-Type'] = 'text/csv'
-    return response
+        data = ticket.to_dict()
+        assigned_to = data.get('assigned_to', [])
+        
+        if isinstance(assigned_to, list):  # Ensure assigned_to is a list
+            assigned_users.update(assigned_to)
 
+    return jsonify(sorted(assigned_users))  # Sort users alphabetically for UI
+
+@app.route('/report', methods=['GET'])
+def get_report():
+    """Fetch ticket data from Firestore, filter by assigned person, month, and date range, and return stats."""
+    assigned_filter = request.args.get('assigned', 'all')
+    month_filter = request.args.get('month', 'all')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # Convert start_date & end_date from string to datetime
+    start_date = datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
+    end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+
+    tickets_ref = db.collection('tickets')
+    tickets = tickets_ref.stream()
+
+    status_counts = {}
+    priority_counts = {}
+    monthly_counts = {}
+    assigned_counts = {}
+    user_status_counts = {}  # Stores status-wise ticket count per user
+
+    filtered_tickets = []
+
+    for ticket in tickets:
+        data = ticket.to_dict()
+        assigned_to = data.get('assigned_to', [])
+        created_at = data.get('created_at')
+
+        # Convert Firestore timestamp to datetime
+        if isinstance(created_at, dict) and 'seconds' in created_at:
+            created_at = datetime.utcfromtimestamp(created_at['seconds'])
+        elif not isinstance(created_at, datetime):
+            continue
+
+        created_at = created_at.replace(tzinfo=None)  # Ensure naive datetime for comparison
+        created_month = created_at.strftime("%m")
+
+        # Apply filters
+        if (assigned_filter == "all" or assigned_filter in assigned_to) and \
+           (month_filter == "all" or created_month == month_filter) and \
+           (start_date is None or created_at >= start_date) and \
+           (end_date is None or created_at <= end_date):
+
+            # Count statuses
+            status = data.get('status', 'Unknown')
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+            # Count priorities
+            priority = data.get('priority', 'Unknown')
+            priority_counts[priority] = priority_counts.get(priority, 0) + 1
+
+            # Count monthly occurrences
+            monthly_counts[created_month] = monthly_counts.get(created_month, 0) + 1
+
+            # Count assigned persons
+            for person in assigned_to:
+                assigned_counts[person] = assigned_counts.get(person, 0) + 1
+
+                # Track ticket statuses for each assigned person
+                if person not in user_status_counts:
+                    user_status_counts[person] = {"Open": 0, "Completed": 0, "Pending": 0}
+                
+                user_status_counts[person][status] = user_status_counts[person].get(status, 0) + 1
+
+            filtered_tickets.append(data)
+
+    return jsonify({
+        "status_counts": status_counts,
+        "priority_counts": priority_counts,
+        "monthly_counts": monthly_counts,
+        "assigned_counts": assigned_counts,
+        "user_status_counts": user_status_counts
+    })
+
+@app.route('/download', methods=['GET'])
+def download_csv():
+    """Generate and serve a filtered CSV report."""
+    assigned_filter = request.args.get('assigned', 'all')
+    month_filter = request.args.get('month', 'all')
+
+    tickets_ref = db.collection('tickets')
+    tickets = tickets_ref.stream()
+
+    csv_file = "report.csv"
+    with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Title", "Status", "Assigned To", "Created At", "Priority", "Product", "Room", "Description"])
+
+        for ticket in tickets:
+            data = ticket.to_dict()
+            assigned_to = data.get('assigned_to', [])
+            created_at = data.get('created_at')
+
+            # Convert Firestore timestamp to datetime
+            if isinstance(created_at, dict) and 'seconds' in created_at:
+                created_at = datetime.utcfromtimestamp(created_at['seconds'])
+            elif not isinstance(created_at, datetime):
+                continue
+
+            created_month = created_at.strftime("%m")
+
+            # Apply filters
+            if (assigned_filter == "all" or assigned_filter in assigned_to) and \
+               (month_filter == "all" or created_month == month_filter):
+
+                writer.writerow([
+                    data.get("title", ""),
+                    data.get("status", ""),
+                    ", ".join(assigned_to),
+                    created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    data.get("priority", ""),
+                    data.get("product", ""),
+                    data.get("room", ""),
+                    data.get("description", ""),
+                ])
+
+    return send_file(
+        csv_file,
+        as_attachment=True,
+        download_name="report.csv",
+        mimetype="text/csv"
+    )
 @app.route('/logout')
 def logout():
     session.pop('user_token', None)
