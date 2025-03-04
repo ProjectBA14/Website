@@ -3,78 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate Reports</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='it-dash-style.css') }}">
+    <title>Firestore Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .report-container {
-            width: 80%;
-            margin: 40px auto;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
             padding: 20px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #eef2f3;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .filter-container {
-            margin-bottom: 20px;
+        .filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
         }
-        .filter-container select, .filter-container input {
+        select, input[type="date"], button {
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
-        .download-btn {
-            margin-top: 10px;
-            padding: 10px 15px;
+        button {
             background-color: #28a745;
             color: white;
-            border: none;
-            border-radius: 4px;
             cursor: pointer;
         }
-        .download-btn:hover {
+        button:hover {
             background-color: #218838;
+        }
+        canvas {
+            max-width: 600px;
+            width: 100%;
+            height: auto;
         }
     </style>
 </head>
 <body>
-    <div class="navigation-bar">
-        <a href="{{ url_for('homepage') }}">Homepage</a>
-        <a href="{{ url_for('it_executive_dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('profile') }}">Profile</a>
-        <a href="{{ url_for('ticket_history') }}">Ticket History</a>
-        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-    </div>
-    
-    <div class="report-container">
-        <h1>Generate Reports</h1>
-        <div class="filter-container">
-            <input type="text" id="searchInput" placeholder="Search Tickets...">
-            <select id="executiveFilter">
-                <option value="">Filter by IT Executive</option>
-                {% for executive in executives %}
-                <option value="{{ executive.email }}">{{ executive.name }}</option>
-                {% endfor %}
+    <div class="container">
+        <h1>Firestore Ticket Report</h1>
+        <button onclick="downloadCSV()">Download CSV</button>
+        <button onclick="clearFilters()">Clear Filters</button>
+        
+        <div class="filters">
+            <label>Filter by Assigned Person:</label>
+            <select id="assignedFilter" onchange="fetchData()">
+                <option value="all">All</option>
             </select>
-            <select id="monthFilter">
-                <option value="">Filter by Month</option>
+        </div>
+
+        <div class="filters">
+            <label>Filter by Month:</label>
+            <select id="monthFilter" onchange="fetchData()">
+                <option value="all">All</option>
                 <option value="01">January</option>
                 <option value="02">February</option>
                 <option value="03">March</option>
@@ -88,52 +78,153 @@
                 <option value="11">November</option>
                 <option value="12">December</option>
             </select>
-            <select id="statusFilter">
-                <option value="">Filter by Status</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Completed">Completed</option>
-            </select>
-            <select id="locationFilter">
-                <option value="">Filter by Location</option>
-                <option value="b-block">B-Block</option>
-                <option value="a-block">A-Block</option>
-            </select>
         </div>
         
-        <table id="report-table">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>IT Executive</th>
-                    <th>Building</th>
-                    <th>Room</th>
-                    <th>Status</th>
-                    <th>Created At</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for ticket in tickets %}
-            <tr>
-                <td>{{ ticket.id }}</td>
-                <td>{{ ticket.title }}</td>
-                <td>{{ ticket.status }}</td>
-                <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.created_at else 'N/A' }}</td>
-                <td>{{ ticket.updated_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.updated_at else 'N/A' }}</td>
-                <td>{{ ticket.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.resolved_at else 'N/A' }}</td>
-            </tr>
-                {% endfor %}
-            </tbody>
-    </table>
+        <div class="filters">
+            <label>Start Date:</label>
+            <input type="date" id="startDate" onchange="fetchData()">
+            
+            <label>End Date:</label>
+            <input type="date" id="endDate" onchange="fetchData()">
+        </div>
         
-        <button class="download-btn" onclick="downloadReport()">Download Report</button>
+        <h2>Tickets by Status</h2>
+        <canvas id="statusChart"></canvas>
+        
+        <h2>Tickets by Priority</h2>
+        <canvas id="priorityChart"></canvas>
+        
+        <h2>Tickets by Month</h2>
+        <canvas id="monthlyChart"></canvas>
+
+        <h2>Tickets Per User (In Progress vs Completed)</h2>
+        <canvas id="progressChart"></canvas>
     </div>
     
     <script>
-        function downloadReport() {
-            window.location.href = "{{ url_for('download_report') }}";
+        async function fetchData() {
+            const assignedPerson = document.getElementById('assignedFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const url = `/report?assigned=${assignedPerson}&month=${month}&start_date=${startDate}&end_date=${endDate}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            updateCharts(data);
+            updateFilters(data.assigned_counts);
         }
+
+        function updateFilters(assignedData) {
+            const filter = document.getElementById('assignedFilter');
+            filter.innerHTML = '<option value="all">All</option>'; 
+
+            if (assignedData && typeof assignedData === 'object') {
+                Object.keys(assignedData).forEach(person => {
+                    filter.innerHTML += `<option value="${person}">${person}</option>`;
+                });
+            }
+        }
+
+        function createChart(chartId, chartData, label, type = 'bar', colors = []) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            return new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: Object.keys(chartData),
+                    datasets: [{
+                        label: label,
+                        data: Object.values(chartData),
+                        backgroundColor: colors.length ? colors : 'rgba(75, 192, 192, 0.7)',
+                        borderColor: '#000',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+
+        let statusChart, priorityChart, monthlyChart, progressChart;
+
+        function updateCharts(data) {
+            if (statusChart) statusChart.destroy();
+            if (priorityChart) priorityChart.destroy();
+            if (monthlyChart) monthlyChart.destroy();
+            if (progressChart) progressChart.destroy();
+
+            const statusCounts = {
+                Completed: data.status_counts?.Completed || 0,
+                Open: data.status_counts?.Open || 0,
+                "In Progress": (data.status_counts?.["In Progress"] || 0) +
+                              (data.status_counts?.["in-progress"] || 0) +
+                              (data.status_counts?.["in_progress"] || 0)
+            };
+
+            statusChart = createChart('statusChart', statusCounts, 'Ticket Status', 'bar', [
+                '#FF6384', '#36A2EB', '#FFCE56'
+            ]);
+
+            priorityChart = createChart('priorityChart', data.priority_counts, 'Ticket Priority', 'doughnut', [
+                '#FF5733', '#33FF57', '#337BFF', '#F333FF'
+            ]);
+
+            monthlyChart = createChart('monthlyChart', data.monthly_counts, 'Tickets per Month', 'line', [
+                '#FF8C00', '#4682B4'
+            ]);
+
+            const users = data.user_status_counts ? Object.keys(data.user_status_counts) : [];
+            const inProgressCounts = users.map(user =>
+                data.user_status_counts[user]
+                    ? Object.keys(data.user_status_counts[user])
+                        .filter(status => 
+                            status.toLowerCase() === "in progress" || 
+                            status.toLowerCase() === "in-progress" || 
+                            status.toLowerCase() === "in_progress"
+                        )
+                        .reduce((sum, status) => sum + data.user_status_counts[user][status], 0)
+                    : 0
+            );
+            const completedCounts = users.map(user => data.user_status_counts[user]?.Completed || 0);
+
+            progressChart = new Chart(document.getElementById('progressChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: users,
+                    datasets: [
+                        {
+                            label: "In Progress",
+                            data: inProgressCounts,
+                            backgroundColor: "#1E90FF",
+                            borderColor: "#000",
+                            borderWidth: 1
+                        },
+                        {
+                            label: "Completed",
+                            data: completedCounts,
+                            backgroundColor: "#008000",
+                            borderColor: "#000",
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+
+        function downloadCSV() {
+            window.location.href = `/download`;
+        }
+
+        function clearFilters() {
+            document.getElementById('assignedFilter').value = "all";
+            document.getElementById('monthFilter').value = "all";
+            document.getElementById('startDate').value = "";
+            document.getElementById('endDate').value = "";
+            fetchData();
+        }
+
+        fetchData();
     </script>
 </body>
 </html>
