@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
+
     <title>Firestore Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -46,44 +48,30 @@
             width: 100%;
             height: auto;
         }
-        /* Navbar Styling */
-        .navbar {
-          background-color: #000;
-          padding: 10px 20px;
-          text-align: center;
-        }
-        
-        .nav-links {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-        
-        .nav-links li {
-          display: inline-block;
-          margin-right: 20px;
-        }
-        
-        .nav-links a {
-          color: white;
-          text-decoration: none;
-          font-weight: bold;
-          padding: 5px 10px;
-        }
-        
-        .nav-links a:hover {
-          text-decoration: underline;
-        }
     </style>
 </head>
 <body>
-    <div class="navigation-bar">
+        <div class="navigation-bar">
+        {% if user_role == 'admin' %}
         <a href="{{ url_for('homepage') }}">Homepage</a>
 
-        <a href="{{ url_for('dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
-        <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
-        <a href="{{ url_for('ticket_history') }}">Admin History</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+            <a href="{{ url_for('admin_tasks') }}">Admin Tasks</a>
+            <a href="{{ url_for('ticket_history') }}">Admin History</a>
+        {% elif user_role == 'it_executive' %}
+        <a href="{{ url_for('homepage') }}">Homepage</a>
+
+            <a href="{{ url_for('it_executive_dashboard') }}">IT executive dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% else %}
+        <a href="{{ url_for('homepage') }}">Homepage</a>
+
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('ticket_history') }}">Ticket History</a>
+        {% endif %}
         <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </div>
     <div class="container">
@@ -99,25 +87,6 @@
         </div>
 
         <div class="filters">
-            <label>Filter by Month:</label>
-            <select id="monthFilter" onchange="fetchData()">
-                <option value="all">All</option>
-                <option value="01">January</option>
-                <option value="02">February</option>
-                <option value="03">March</option>
-                <option value="04">April</option>
-                <option value="05">May</option>
-                <option value="06">June</option>
-                <option value="07">July</option>
-                <option value="08">August</option>
-                <option value="09">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-            </select>
-        </div>
-        
-        <div class="filters">
             <label>Start Date:</label>
             <input type="date" id="startDate" onchange="fetchData()">
             
@@ -131,8 +100,8 @@
         <h2>Tickets by Priority</h2>
         <canvas id="priorityChart"></canvas>
         
-        <h2>Tickets by Month</h2>
-        <canvas id="monthlyChart"></canvas>
+        <h2>Tickets by Product</h2>
+        <canvas id="productChart"></canvas>
 
         <h2>Tickets Per User (In Progress vs Completed)</h2>
         <canvas id="progressChart"></canvas>
@@ -140,17 +109,20 @@
     
     <script>
         async function fetchData() {
-            const assignedPerson = document.getElementById('assignedFilter').value;
-            const month = document.getElementById('monthFilter').value;
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+            try {
+                const assignedPerson = document.getElementById('assignedFilter').value;
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
 
-            const url = `/report?assigned=${assignedPerson}&month=${month}&start_date=${startDate}&end_date=${endDate}`;
-            const response = await fetch(url);
-            const data = await response.json();
+                const url = `/report?assigned=${assignedPerson}&start_date=${startDate}&end_date=${endDate}`;
+                const response = await fetch(url);
+                const data = await response.json();
 
-            updateCharts(data);
-            updateFilters(data.assigned_counts);
+                updateCharts(data);
+                updateFilters(data.assigned_counts);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
         }
 
         function updateFilters(assignedData) {
@@ -166,13 +138,17 @@
 
         function createChart(chartId, chartData, label, type = 'bar', colors = []) {
             const ctx = document.getElementById(chartId).getContext('2d');
+
+            // Ensure chartData is a valid object
+            const safeChartData = chartData && typeof chartData === 'object' ? chartData : {};
+
             return new Chart(ctx, {
                 type: type,
                 data: {
-                    labels: Object.keys(chartData),
+                    labels: Object.keys(safeChartData),
                     datasets: [{
                         label: label,
-                        data: Object.values(chartData),
+                        data: Object.values(safeChartData),
                         backgroundColor: colors.length ? colors : 'rgba(75, 192, 192, 0.7)',
                         borderColor: '#000',
                         borderWidth: 1
@@ -182,35 +158,35 @@
             });
         }
 
-        let statusChart, priorityChart, monthlyChart, progressChart;
+        let statusChart, priorityChart, productChart, progressChart;
 
         function updateCharts(data) {
             if (statusChart) statusChart.destroy();
             if (priorityChart) priorityChart.destroy();
-            if (monthlyChart) monthlyChart.destroy();
+            if (productChart) productChart.destroy();
             if (progressChart) progressChart.destroy();
 
             const statusCounts = {
-                Completed: data.status_counts?.Completed || 0,
-                Open: data.status_counts?.Open || 0,
-                "In Progress": (data.status_counts?.["In Progress"] || 0) +
-                              (data.status_counts?.["in-progress"] || 0) +
-                              (data.status_counts?.["in_progress"] || 0)
+                Completed: data?.status_counts?.Completed || 0,
+                Open: data?.status_counts?.Open || 0,
+                "In Progress": (data?.status_counts?.["In Progress"] || 0) +
+                              (data?.status_counts?.["in-progress"] || 0) +
+                              (data?.status_counts?.["in_progress"] || 0)
             };
 
             statusChart = createChart('statusChart', statusCounts, 'Ticket Status', 'bar', [
                 '#FF6384', '#36A2EB', '#FFCE56'
             ]);
 
-            priorityChart = createChart('priorityChart', data.priority_counts, 'Ticket Priority', 'doughnut', [
+            priorityChart = createChart('priorityChart', data?.priority_counts, 'Ticket Priority', 'doughnut', [
                 '#FF5733', '#33FF57', '#337BFF', '#F333FF'
             ]);
 
-            monthlyChart = createChart('monthlyChart', data.monthly_counts, 'Tickets per Month', 'line', [
-                '#FF8C00', '#4682B4'
+            productChart = createChart('productChart', data?.product_counts, 'Tickets by Product', 'bar', [
+                '#8A2BE2', '#DC143C', '#20B2AA', '#FFD700'
             ]);
 
-            const users = data.user_status_counts ? Object.keys(data.user_status_counts) : [];
+            const users = data?.user_status_counts ? Object.keys(data.user_status_counts) : [];
             const inProgressCounts = users.map(user =>
                 data.user_status_counts[user]
                     ? Object.keys(data.user_status_counts[user])
@@ -255,7 +231,6 @@
 
         function clearFilters() {
             document.getElementById('assignedFilter').value = "all";
-            document.getElementById('monthFilter').value = "all";
             document.getElementById('startDate').value = "";
             document.getElementById('endDate').value = "";
             fetchData();
