@@ -856,23 +856,30 @@ def admin_tasks():
     it_executives = [{'id': it_exec.id, 'name': it_exec.get('name'), 'email': it_exec.get('email')} for it_exec in it_executives_ref]
 
     # Update statistics for IT executives
+    # Update statistics for IT executives
     for ticket in tickets:
-    assigned_to = ticket.get('assigned_to', [])  # Ensure it's a list
-    assigned_time = ticket.get('created_at')
-
-    # Convert Firestore timestamp to datetime
-    if isinstance(assigned_time, dict) and 'seconds' in assigned_time:
-        assigned_time = datetime.utcfromtimestamp(assigned_time['seconds'])
-
-    if assigned_to and isinstance(assigned_to, list) and isinstance(assigned_time, datetime):
-        for exec in it_executives:
-            if exec.get('email') and exec['email'] in assigned_to:
-                if start_of_today <= assigned_time <= end_of_today:
-                    exec.setdefault('tickets_today', 0)
-                    exec['tickets_today'] += 1
-                elif assigned_time < three_days_ago:
-                    exec.setdefault('backlog_count', 0)
-                    exec['backlog_count'] += 1
+        assigned_to = ticket.get('assigned_to', [])
+    
+        # Ensure assigned_to is always a list
+        if not isinstance(assigned_to, list):
+            assigned_to = [assigned_to] if isinstance(assigned_to, str) else []
+    
+        assigned_time = ticket.get('created_at')
+    
+        # Convert Firestore timestamp to datetime
+        if isinstance(assigned_time, dict) and 'seconds' in assigned_time:
+            assigned_time = datetime.utcfromtimestamp(assigned_time['seconds'])
+    
+        # Ensure assigned_time is a valid datetime before processing
+        if isinstance(assigned_time, datetime):
+            for exec in it_executives:
+                if exec.get('email') and exec['email'] in assigned_to:
+                    if start_of_today <= assigned_time <= end_of_today:
+                        exec.setdefault('tickets_today', 0)
+                        exec['tickets_today'] += 1
+                    elif assigned_time < three_days_ago:
+                        exec.setdefault('backlog_count', 0)
+                        exec['backlog_count'] += 1
 
 
     # Fetch all scheduled events
