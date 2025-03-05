@@ -75,6 +75,20 @@
         .toggleable-section.active {
             display: block;
         }
+        }
+
+        .remove-button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        
+        .remove-button:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
@@ -162,12 +176,16 @@
                                         {% endfor %}
                                     </select>
                                     <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
-                                    <button type="submit" class="assign-button">Assign</button>
+                                    
+                                    <!-- Assign and Remove Buttons -->
+                                    <button type="submit" name="action" value="assign" class="assign-button">Assign</button>
+                                    <button type="submit" name="action" value="remove" class="remove-button">Remove</button>
                                 </form>
-                                
+                            
                                 <button class="view-history-btn" data-ticket-id="{{ ticket.id }}">View History</button>
                             </div>
-                        </td>
+                            
+                                                    </td>
                     </tr>
                     <!-- Hidden Row for Ticket History -->
                     <tr class="ticket-history-row" id="history-{{ ticket.id }}" style="display: none;">
