@@ -790,7 +790,7 @@ def admin_tasks():
         ticket_id = request.form.get('ticket_id')
         event_id = request.form.get('event_id')
         it_executive = request.form.get('it_executive')  # Get the selected IT executive
-        action = request.form.get('action')  # Determine whether Assign or Remove was clicked
+        action = request.form.get('action')  # Assign or Remove
 
         if not it_executive:
             flash("No IT executive selected.")
@@ -799,6 +799,14 @@ def admin_tasks():
         try:
             if ticket_id:
                 ticket_ref = db.collection('tickets').document(ticket_id)
+                ticket_data = ticket_ref.get().to_dict()
+                
+                if ticket_data is None:
+                    flash("Ticket not found.")
+                    return redirect(url_for('admin_tasks'))
+
+                history = ticket_data.get('history', [])  # Fetch history or create an empty list
+                timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
 
                 if action == "remove":
                     # Remove IT executive from the ticket
@@ -806,32 +814,66 @@ def admin_tasks():
                         'assigned_to': firestore.ArrayRemove([it_executive])
                     })
                     # Check if the ticket has no more assigned executives, set status to "Open"
-                    ticket = ticket_ref.get().to_dict()
-                    if not ticket.get('assigned_to'):
+                    updated_ticket = ticket_ref.get().to_dict()
+                    if not updated_ticket.get('assigned_to'):
                         ticket_ref.update({'status': 'Open'})
+
+                    # Log history update
+                    history.append({
+                        'note': f"{it_executive} was removed from the ticket.",
+                        'status': updated_ticket.get('status', 'Open'),
+                        'timestamp': timestamp_str
+                    })
+                    ticket_ref.update({'history': history})
                     flash(f"{it_executive} removed from the ticket.")
 
                 elif action == "assign":
                     # Assign IT executive to the ticket
                     ticket_ref.update({
                         'assigned_to': firestore.ArrayUnion([it_executive]),
-                        'status': 'in-progress'
+                        'status': 'In Progress'
                     })
+
+                    # Log history update
+                    history.append({
+                        'note': f"{it_executive} was assigned to the ticket.",
+                        'status': 'In Progress',
+                        'timestamp': timestamp_str
+                    })
+                    ticket_ref.update({'history': history})
                     flash(f"Ticket assigned to {it_executive}.")
 
             elif event_id:
                 event_ref = db.collection('scheduled_events').document(event_id)
+                event_data = event_ref.get().to_dict()
+
+                if event_data is None:
+                    flash("Scheduled event not found.")
+                    return redirect(url_for('admin_tasks'))
+
+                history = event_data.get('history', [])
+                timestamp_str = now.strftime("%Y-%m-%d %H:%M:%S")
 
                 if action == "remove":
                     event_ref.update({
                         'assigned_to': firestore.ArrayRemove([it_executive])
                     })
+                    history.append({
+                        'note': f"{it_executive} was removed from the event.",
+                        'timestamp': timestamp_str
+                    })
+                    event_ref.update({'history': history})
                     flash(f"{it_executive} removed from the scheduled event.")
 
                 elif action == "assign":
                     event_ref.update({
                         'assigned_to': firestore.ArrayUnion([it_executive])
                     })
+                    history.append({
+                        'note': f"{it_executive} was assigned to the event.",
+                        'timestamp': timestamp_str
+                    })
+                    event_ref.update({'history': history})
                     flash(f"Scheduled event assigned to {it_executive}.")
 
         except Exception as e:
