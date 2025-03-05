@@ -1,22 +1,15 @@
-// Toggle Ticket Views
+// Toggle between ticket and scheduled event sections
 document.querySelectorAll('.toggle-btn').forEach(button => {
     button.addEventListener('click', function() {
-        let status = this.getAttribute('data-status');
-        toggleTickets(status);
+        const sectionId = this.getAttribute('data-section');
+        document.querySelectorAll('.toggleable-section').forEach(section => {
+            section.classList.remove('active');
+            if (section.id === sectionId) {
+                section.classList.add('active');
+            }
+        });
     });
 });
-
-function toggleTickets(status) {
-    let rows = document.querySelectorAll('.ticket-row');
-    rows.forEach(row => {
-        let ticketStatus = row.getAttribute('data-status').toLowerCase();
-        if (status === 'all' || ticketStatus === status) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
 
 // Sorting logic for Created At column
 let sortDirection = true;
@@ -101,5 +94,19 @@ document.querySelectorAll('.view-history-btn').forEach(button => {
         } else {
             historyRow.style.display = 'none';
         }
+    });
+});
+
+// Remove IT Executive from a ticket
+document.querySelectorAll('.remove-button').forEach(button => {
+    button.addEventListener('click', function(event) {
+        event.preventDefault();
+        let form = this.closest('form');
+        let actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'remove';
+        form.appendChild(actionInput);
+        form.submit();
     });
 });
