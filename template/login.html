@@ -92,6 +92,7 @@
             <input type="hidden" id="recaptchaToken" name="g-recaptcha-response">
             <button type="submit">Login</button>
         </form>
+        <a href="{{ url_for('change_password') }}">Forgot Password</a>
         <a href="{{ url_for('google_login') }}">Login with Google</a>
 
         {% with messages = get_flashed_messages() %}
