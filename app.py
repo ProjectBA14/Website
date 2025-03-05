@@ -789,52 +789,50 @@ def admin_tasks():
     if request.method == 'POST':
         ticket_id = request.form.get('ticket_id')
         event_id = request.form.get('event_id')
-        it_executives = request.form.getlist('it_executive')  # Get the list of selected IT executives
+        it_executive = request.form.get('it_executive')  # Get the selected IT executive
+        action = request.form.get('action')  # Determine whether Assign or Remove was clicked
 
-        # Ensure at least one IT executive is selected
-        if not it_executives:
-            flash("No IT executive(s) selected.")
+        if not it_executive:
+            flash("No IT executive selected.")
             return redirect(url_for('admin_tasks'))
 
         try:
-            # Update the ticket if the assignment is for a ticket
             if ticket_id:
                 ticket_ref = db.collection('tickets').document(ticket_id)
-                if "unassign" in it_executives:
-                    # Unassign the specified IT executives from the ticket
-                    for exec_email in it_executives:
-                        ticket_ref.update({
-                            'assigned_to': firestore.ArrayRemove([exec_email])
-                        })
+
+                if action == "remove":
+                    # Remove IT executive from the ticket
+                    ticket_ref.update({
+                        'assigned_to': firestore.ArrayRemove([it_executive])
+                    })
                     # Check if the ticket has no more assigned executives, set status to "Open"
                     ticket = ticket_ref.get().to_dict()
                     if not ticket.get('assigned_to'):
                         ticket_ref.update({'status': 'Open'})
-                    flash("Selected IT executive(s) unassigned from the ticket.")
-                else:
-                    # Assign the specified IT executives to the ticket
+                    flash(f"{it_executive} removed from the ticket.")
+
+                elif action == "assign":
+                    # Assign IT executive to the ticket
                     ticket_ref.update({
-                        'assigned_to': firestore.ArrayUnion(it_executives),
+                        'assigned_to': firestore.ArrayUnion([it_executive]),
                         'status': 'in-progress'
                     })
-                    flash("Ticket successfully assigned to selected IT executive(s).")
-            
-            # Update the scheduled event if the assignment is for an event
+                    flash(f"Ticket assigned to {it_executive}.")
+
             elif event_id:
                 event_ref = db.collection('scheduled_events').document(event_id)
-                if "unassign" in it_executives:
-                    # Unassign the specified IT executives from the event
-                    for exec_email in it_executives:
-                        event_ref.update({
-                            'assigned_to': firestore.ArrayRemove([exec_email])
-                        })
-                    flash("Selected IT executive(s) unassigned from the scheduled event.")
-                else:
-                    # Assign the specified IT executives to the event
+
+                if action == "remove":
                     event_ref.update({
-                        'assigned_to': firestore.ArrayUnion(it_executives)
+                        'assigned_to': firestore.ArrayRemove([it_executive])
                     })
-                    flash("Scheduled event successfully assigned to selected IT executive(s).")
+                    flash(f"{it_executive} removed from the scheduled event.")
+
+                elif action == "assign":
+                    event_ref.update({
+                        'assigned_to': firestore.ArrayUnion([it_executive])
+                    })
+                    flash(f"Scheduled event assigned to {it_executive}.")
 
         except Exception as e:
             flash(f"An error occurred while updating: {str(e)}")
@@ -847,8 +845,7 @@ def admin_tasks():
     for ticket in tickets_ref:
         ticket_data = ticket.to_dict()
         ticket_data['id'] = ticket.id
-        # Handle missing created_at by providing a default value
-        ticket_data['created_at'] = ticket_data.get('created_at', None)
+        ticket_data['created_at'] = ticket_data.get('created_at', None)  # Handle missing created_at
         tickets.append(ticket_data)
 
     # Fetch all IT executives
@@ -856,20 +853,19 @@ def admin_tasks():
     it_executives = [{'id': it_exec.id, 'name': it_exec.get('name'), 'email': it_exec.get('email')} for it_exec in it_executives_ref]
 
     # Update statistics for IT executives
-    # Update statistics for IT executives
     for ticket in tickets:
         assigned_to = ticket.get('assigned_to', [])
-    
+
         # Ensure assigned_to is always a list
         if not isinstance(assigned_to, list):
             assigned_to = [assigned_to] if isinstance(assigned_to, str) else []
-    
+
         assigned_time = ticket.get('created_at')
-    
+
         # Convert Firestore timestamp to datetime
         if isinstance(assigned_time, dict) and 'seconds' in assigned_time:
             assigned_time = datetime.utcfromtimestamp(assigned_time['seconds'])
-    
+
         # Ensure assigned_time is a valid datetime before processing
         if isinstance(assigned_time, datetime):
             for exec in it_executives:
@@ -881,13 +877,11 @@ def admin_tasks():
                         exec.setdefault('backlog_count', 0)
                         exec['backlog_count'] += 1
 
-
     # Fetch all scheduled events
     scheduled_events_ref = db.collection('scheduled_events').stream()
     scheduled_events = [{'id': event.id, **event.to_dict()} for event in scheduled_events_ref]
 
     return render_template('admin_tasks.html', tickets=tickets, it_executives=it_executives, scheduled_events=scheduled_events, now=now)
-
 
 
 from google.cloud.firestore_v1 import _helpers
