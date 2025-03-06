@@ -3,155 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="{{ url_for('static', filename='mega.css') }}">
-
-    <title>Homepage</title>
-<style>
-        /* Global Styles */
+    <title>GD Goenka University CRM</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700&display=swap" rel="stylesheet">
+    <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'DM Sans', sans-serif;
-            color: #333;
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
         }
-
         body {
-            font-size: 16px;
-            line-height: 1.5;
-            display: flex;
-            height: 100vh;
-            background-color: #f9f9f9;
+            background-color: #101820;
+            color: #fff;
+            overflow-x: hidden;
         }
-
-        .sidebar {
-            width: 250px;
-            background-color: #2c3e50;
-            padding: 20px;
-            color: #ffffff;
-            height: 100vh;
+        header {
             position: fixed;
+            width: 100%;
             top: 0;
-            left: -250px;
-            transition: left 0.3s ease;
+            left: 0;
+            padding: 15px 50px;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.5rem;
             z-index: 1000;
+            font-weight: bold;
         }
-
-        .sidebar-heading {
-            margin-top: 0;
-            color: #ffffff;
-            font-size: 24px;
-            text-align: center;
+        .logo {
+            font-size: 1.8rem;
+            color: white;
+            font-weight: bold;
         }
-
-        .profile-section {
-            margin-top: 20px;
-        }
-
-        .profile-section p {
-            margin: 5px 0;
-            color: #ffffff;
-        }
-
-        .user-dashboard {
-            flex-grow: 1;
-            padding: 20px;
-            margin-left: 0;
-            transition: margin-left 0.3s ease-in-out;
-        }
-
-        .tab {
-            overflow: hidden;
-            background-color: #f1f1f1;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .tab button {
-            background-color: inherit;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 14px 20px;
-            font-size: 17px;
-            transition: background-color 0.3s;
-        }
-
-        .tab button.active {
-            background-color: #ccc;
-        }
-
-        .tabcontent {
-            display: none;
-        }
-
-        .tabcontent.active {
-            display: block;
-        }
-        /* Navbar Styling */
-        .navbar {
-          background-color: #000;
-          padding: 10px 20px;
-          text-align: center;
-        }
-        
         .nav-links {
-          list-style: none;
-          padding: 0;
-          margin: 0;
+            display: flex;
+            gap: 15px;
         }
-        
-        .nav-links li {
-          display: inline-block;
-          margin-right: 20px;
-        }
-        
         .nav-links a {
-          color: white;
-          text-decoration: none;
-          font-weight: bold;
-          padding: 5px 10px;
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 12px 24px;
+            background: black;
+            border-radius: 4px;
+            transition: background 0.3s ease, transform 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 2px solid white;
         }
-        
         .nav-links a:hover {
-          text-decoration: underline;
+            background: white;
+            color: black;
+            transform: translateY(-2px);
+        }
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .hero-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-family: 'League Spartan', sans-serif;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.7);
+            z-index: 3;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            color: white;
+            max-width: 700px;
+        }
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .hero p {
+            font-size: 1.5rem;
+        }
+        .container {
+            padding: 60px 10%;
+            text-align: center;
+        }
+        .grid-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .grid-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 220px;
+            height: 60px;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            color: black;
+            text-decoration: none;
+            clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: transform 0.3s, background 0.3s;
+            text-transform: uppercase;
+            border: 2px solid white;
+            letter-spacing: 1px;
+            box-shadow: 3px 3px 10px rgba(255, 255, 255, 0.2);
+        }
+        .grid-links a:hover {
+            transform: scale(1.1);
+            background: black;
+            color: white;
         }
     </style>
 </head>
 <body>
-
-
-  <nav>
-    <ul>
-      {% for link in allowed_links %}
-                <li><a href="{{ link.url }}">{{ link.name }}</a></li>
+    <header>
+        <div class="logo">GD Goenka University CRM</div>
+        <div class="nav-links">
+            <a href="login.html">Login</a>
+            <a href="signup.html">Sign Up</a>
+        </div>
+    </header>
+    
+    <section class="hero">
+        <video autoplay muted loop>
+            <source src="{{ url_for('static', filename='videos/2.mp4') }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <h1 class="hero-title">GD GOENKA UNIVERSITY</h1>
+        <div class="hero-content">
+            <h1>Welcome to GD Goenka University Portal</h1>
+            <p>Efficient. Reliable. Seamless access to university services.</p>
+        </div>
+    </section>
+    
+    <div class="container">
+        <h2>Explore the CRM Portal</h2>
+        <p>Enhance your university experience with our advanced CRM system.</p>
+        <div class="grid-links">
+            {% for link in allowed_links %}
+            <a href="{{ link.url }}">{{ link.name }}</a> 
             {% endfor %}
-    </ul>
-  </nav>
-
-  <main>
-    <section id="home">
-      <h2>Home</h2>
-      <p>This is the home section. </p>
-    </section>
-
-    <section id="about">
-      <h2>Profile</h2>
-      <p>Create your profile</p>
-    </section>
-
-    <section id="services">
-      <h2>Manage</h2>
-      <p>List and describe the services or products you offer.</p>
-    </section>
-
-    <section id="contact">
-      <h2>Contact</h2>
-      <p>Include your contact information</p>
-    </section>
-  </main>
-
-  <footer>
-  </footer>
+        </div>
+    </div>
+    
+    <script>
+        gsap.from(".hero-content", { duration: 1.5, opacity: 0, y: -50, ease: "power2.out" });
+    </script>
 </body>
 </html>
