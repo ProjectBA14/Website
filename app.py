@@ -680,7 +680,7 @@ def it_executive_dashboard():
                         'history': firestore.ArrayUnion([{
                             'status': status,
                             'timestamp': current_time,
-                            'note': progress_note if status == 'In Progress' else None
+                            'note': progress_note if progress_note else ''
                         }])
                     })
                     flash(f'Ticket {ticket_id} status updated to {status}!', 'success')
